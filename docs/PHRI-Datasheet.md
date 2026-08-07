@@ -158,12 +158,12 @@ Inverting the bits in a word is a bitwise NOT; this can be effected using an exc
 
 Shortcut mnemonics for alterations to the status register are also provided:
 
-| Mnemonic             | Actual code              | Description      |
-| :------------------- | :------------------ ---- | :--------------- |
-| `SRA  SYM | #<IMM4>` | `SR  AND, SYM | #<IMM4>` | F <= F & IMM4    |
-| `SRO  SYM | #<IMM4>` | `SR  OR, SYM | #<IMM4>`  | F <= F | IMM4    |
-| `SRX  SYM | #<IMM4>` | `SR  XOR, SYM | #<IMM4>` | F <= F ^ IMM4    |
-| `SRS  SYM | #<IMM4>` | `SR  SET, SYM | #<IMM4>` | F <= IMM4        |
+| Mnemonic              | Actual code              | Description      |
+| :-------------------- | :------------------ ---- | :--------------- |
+| `SRA  SYM \| #<IMM4>` | `SR  AND, SYM | #<IMM4>` | F <= F & IMM4    |
+| `SRO  SYM \| #<IMM4>` | `SR  OR, SYM | #<IMM4>`  | F <= F | IMM4    |
+| `SRX  SYM \| #<IMM4>` | `SR  XOR, SYM | #<IMM4>` | F <= F ^ IMM4    |
+| `SRS  SYM \| #<IMM4>` | `SR  SET, SYM | #<IMM4>` | F <= IMM4        |
 
 
 ### Data movement
@@ -177,18 +177,18 @@ Data movement encompasses instructions that move words between registers in the 
 
 Introducing values into registers is a fundamental behavior of a processor.  The ISA includes instructions that transfer values from one register to another — including the `MSEG` and `PC` registers — as well as instructions with embedded 8-bit constants to set the LSB or MSB of a register.
 
-| Mnemonic                  | Bit pattern      | Description                           |
-| :------------------------ | :--------------- | :------------------------------------ |
-| `MOV       Rd, Rx`        | 0000000000XXXDDD | Rd <= Rx                              |
-| `MVN       Rd, Rx`        | 0000000001XXXDDD | Rd <= ~Rx                             |
-| `MOV       Rd, PC, Rx`    | 0000000010XXXDDD | Rd <= PC + Rx                         |
-| `MOV       PC, Rx`        | 0000000011XXX000 | PC <= Rx                              |
-| `MOV       Rd, MSEG`      | 0000000100000DDD | Rd <= MSEG                            |
-| `MOV       MSEG, Rx`      | 0000000101XXX000 | MSEG <= Rx                            |
-| `MOV       MSEG, #<IMM4>` | 00000001100CC000 | MSEG <= IMM4               (2b const) |
-| `SEL       Rd, Rx, Ry`    | 0000001YYYXXXDDD | Rd <= (Rd == 0) ? Rx : Ry             |
-| `MVL       Rd, #<IMM8>`   | 00010CCCCCCCCDDD | Rd.LSB <= IMM8             (8b const) |
-| `MVH       Rd, #<IMM8>`   | 00011CCCCCCCCDDD | Rd.MSB <= IMM8             (8b const) |
+| Mnemonic                  | Bit pattern        | Description                           |
+| :------------------------ | :----------------- | :------------------------------------ |
+| `MOV       Rd, Rx`        | `0000000000XXXDDD` | Rd <= Rx                              |
+| `MVN       Rd, Rx`        | `0000000001XXXDDD` | Rd <= ~Rx                             |
+| `MOV       Rd, PC, Rx`    | `0000000010XXXDDD` | Rd <= PC + Rx                         |
+| `MOV       PC, Rx`        | `0000000011XXX000` | PC <= Rx                              |
+| `MOV       Rd, MSEG`      | `0000000100000DDD` | Rd <= MSEG                            |
+| `MOV       MSEG, Rx`      | `0000000101XXX000` | MSEG <= Rx                            |
+| `MOV       MSEG, #<IMM4>` | `00000001100CC000` | MSEG <= IMM4               (2b const) |
+| `SEL       Rd, Rx, Ry`    | `0000001YYYXXXDDD` | Rd <= (Rd == 0) ? Rx : Ry             |
+| `MVL       Rd, #<IMM8>`   | `00010CCCCCCCCDDD` | Rd.LSB <= IMM8             (8b const) |
+| `MVH       Rd, #<IMM8>`   | `00011CCCCCCCCDDD` | Rd.MSB <= IMM8             (8b const) |
 
 ##### Pseudo-instructions
 
@@ -221,20 +221,20 @@ With `R6` being the traditional register used for linking (see the section on Br
 
 The ISA includes a number of instructions which move data between system memory and the general-purpose registers.
 
-| Mnemonic                      | Bit pattern      | Description                           |
-| :---------------------------- | :--------------- | :------------------------------------ |
-| `LDR       Rd, [Rx+Ry]`       | 0010001YYYXXXDDD | Rd <= [Rx + Ry]                       |
-| `LDL       Rd, [Rx]`          | 0010000000XXXDDD | Rd.LSB <= [Rx].LSB                    |
-| `LDH       Rd, [Rx]`          | 0010000001XXXDDD | Rd.MSB <= [Rx].MSB                    |
-| `LDR.<CC>  Rd, [Rx]`          | 0010010SSSXXXDDD | If CC: Rd <= [Rx]                     |
-| `LDR       Rd, [Rx], #<IMM4>` | 001010CCCCXXXDDD | Rd <= [Rx], Rx += IMM4                |
-| `LDR       Rd, [Rx], Ry`      | 0010110YYYXXXDDD | Rd <= [Rx], Rx += Ry                  |
-| `STO       [Rx+Ry], Rd`       | 0011001YYYXXXDDD | [Rx + Ry] <= Rd (no offset, Ry=Z)     |
-| `STL       [Rx], Rd`          | 0011000000XXXDDD | [Rx].LSB <= Rd.LSB                    |
-| `STH       [Rx], Rd`          | 0011000001XXXDDD | [Rx].MSB <= Rd.MSB                    |
-| `STO.<CC>  [Rx], Rd`          | 0011010SSSXXXDDD | If CC: [Rx] <= Rd                     |
-| `STO       #<IMM4>, [Rx], Rd` | 001110CCCCXXXDDD | [Rx] <= Rd, Rx += IMM4                |
-| `STO       Ry, [Rx], Rd`      | 0011110YYYXXXDDD | Rx += Ry, [Rx] <= Rd                  |
+| Mnemonic                      | Bit pattern        | Description                           |
+| :---------------------------- | :----------------- | :------------------------------------ |
+| `LDR       Rd, [Rx+Ry]`       | `0010001YYYXXXDDD` | Rd <= [Rx + Ry]                       |
+| `LDL       Rd, [Rx]`          | `0010000000XXXDDD` | Rd.LSB <= [Rx].LSB                    |
+| `LDH       Rd, [Rx]`          | `0010000001XXXDDD` | Rd.MSB <= [Rx].MSB                    |
+| `LDR.<CC>  Rd, [Rx]`          | `0010010SSSXXXDDD` | If CC: Rd <= [Rx]                     |
+| `LDR       Rd, [Rx], #<IMM4>` | `001010CCCCXXXDDD` | Rd <= [Rx], Rx += IMM4                |
+| `LDR       Rd, [Rx], Ry`      | `0010110YYYXXXDDD` | Rd <= [Rx], Rx += Ry                  |
+| `STO       [Rx+Ry], Rd`       | `0011001YYYXXXDDD` | [Rx + Ry] <= Rd (no offset, Ry=Z)     |
+| `STL       [Rx], Rd`          | `0011000000XXXDDD` | [Rx].LSB <= Rd.LSB                    |
+| `STH       [Rx], Rd`          | `0011000001XXXDDD` | [Rx].MSB <= Rd.MSB                    |
+| `STO.<CC>  [Rx], Rd`          | `0011010SSSXXXDDD` | If CC: [Rx] <= Rd                     |
+| `STO       #<IMM4>, [Rx], Rd` | `001110CCCCXXXDDD` | [Rx] <= Rd, Rx += IMM4                |
+| `STO       Ry, [Rx], Rd`      | `0011110YYYXXXDDD` | Rx += Ry, [Rx] <= Rd                  |
 
 The ISA includes load and store instructions that automatically adjust the address register.  For `LDR` instructions the adjustment is made after the data has been loaded; for `STO` the adjustment is made before the data is loaded.  Load instructions are thus post-increment or post-decrement, while store instructions are pre-increment or pre-decrement.  The most common use pattern is pre-decrement `STO` with post-increment `LDR`:  a stack.
 
