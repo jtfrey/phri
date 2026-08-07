@@ -1,11 +1,11 @@
-# FFP00 Data Sheet
+# PHRI Data Sheet
 
-The Frey Fake Processor model 00 is an invented 16-bit ISA.  It features a uniform 16-bit data bus and 20-bit address bus; memory is addressed in *segments* of 64 KiB.
+The PHRI (PHRI is a Hypothetical RISC ISA) is an invented 16-bit ISA.  It features a uniform 16-bit data bus and 20-bit address bus; memory is addressed in *segments* of 64 KiB.
 
 
 ## Register set
 
-The FFP00 possesses eleven 16-bit registers.  There are eight general-purpose registers labelled R0 through R7; R0 is a read-only register that always contains a value of zero.  The remaining registers are usable in any capacity across the instructions, but the assembly mnemonics include aliases for each that convey a possible purpose:
+The PHRI possesses eleven 16-bit registers.  There are eight general-purpose registers labelled R0 through R7; R0 is a read-only register that always contains a value of zero.  The remaining registers are usable in any capacity across the instructions, but the assembly mnemonics include aliases for each that convey a possible purpose:
 
 | Index | Alias | Implied usage                                          |
 | :---- | :---- | :----------------------------------------------------- |
@@ -22,7 +22,7 @@ This is merely a suggested convention:  user software can task each of the regis
 
 A program counter (`PC`) register holds the 16-bit address of the instruction that will be fetched next.  At boot, the `PC` is initialized to `$00000` — program code is expected to originate at this address.  The leading nibble comes from the *program counter segment* or `PSEG`, which comes from the high nibble of the `MSEG` register.  When the program counter is updated using a relative offset, the `PSEG` will wrap to the subsequent/previous segment automatically when crossing a `$0000` address.
 
-Instructions that load/store data must also work with memory addresses.  A separate *data segment* or `DSEG`, which comes from the low nibble of the `MSEG` register.  Like the `PSEG`, the `DSEG` is initialized to zero.  It can be directly modified by user code to alter the target address of subsequent load/store instructions.  If there were a single segment value, user code would effectively switch itself out of scope when altering a singular segment register; keeping the `PSEG` and `DSEG` separate keeps the `PC` functional.  The programmer should bear in mind, though, that the `DSEG` is **not** automatically adjusted:  user code must handle the `DSEG` adjustments as necessary to access data held in other segments.  This has a direct effect on FFP00 stacks:  a stack can never exceed 64 KiB in size and it is up to the user code to ensure the correct `DSEG` is selected when pushing/popping data.
+Instructions that load/store data must also work with memory addresses.  A separate *data segment* or `DSEG`, which comes from the low nibble of the `MSEG` register.  Like the `PSEG`, the `DSEG` is initialized to zero.  It can be directly modified by user code to alter the target address of subsequent load/store instructions.  If there were a single segment value, user code would effectively switch itself out of scope when altering a singular segment register; keeping the `PSEG` and `DSEG` separate keeps the `PC` functional.  The programmer should bear in mind, though, that the `DSEG` is **not** automatically adjusted:  user code must handle the `DSEG` adjustments as necessary to access data held in other segments.  This has a direct effect on PHRI stacks:  a stack can never exceed 64 KiB in size and it is up to the user code to ensure the correct `DSEG` is selected when pushing/popping data.
 
 The instruction register (`INSTR`) latches the instruction word when one is fetched.
 
@@ -240,7 +240,7 @@ The ISA includes load and store instructions that automatically adjust the addre
 
 ##### Stacks
 
-Stacks are implemented on the FFP00 by choosing a general-purpose register that will act as the *stack pointer*.  The convention is that `R7` is used, hence its alias of `SP`.
+Stacks are implemented on the PHRI by choosing a general-purpose register that will act as the *stack pointer*.  The convention is that `R7` is used, hence its alias of `SP`.
 
 Pushing a register to the stack is accomplished with the `STO` instruction, bearing in mind that registers are two bytes in size:
 
@@ -291,7 +291,7 @@ if ( x % 2 ) {
 }
 ```
 
-Since `x` is even, the conditional fails and the increment must be skipped by branching past it.  Calling a subroutine is slightly more complicated:  the `PC` must be saved before it is modified, so that the subroutine can restore that saved value to continue program execution in the calling context.  In the FFP00 ISA, saving the `PC` before altering it is known as `linking`, and can be enabled on any of the branch instructions.  The value of the `PC` is transferred to one of the general purpose registers.  For the 12-bit constant offset modes, the `R6`/`L` is implied, while the other modes allow an arbitrary general purpose register to be chosen:
+Since `x` is even, the conditional fails and the increment must be skipped by branching past it.  Calling a subroutine is slightly more complicated:  the `PC` must be saved before it is modified, so that the subroutine can restore that saved value to continue program execution in the calling context.  In the PHRI ISA, saving the `PC` before altering it is known as `linking`, and can be enabled on any of the branch instructions.  The value of the `PC` is transferred to one of the general purpose registers.  For the 12-bit constant offset modes, the `R6`/`L` is implied, while the other modes allow an arbitrary general purpose register to be chosen:
 
 ```
             MV0L        A, #18          ; Set A to 0x0012
