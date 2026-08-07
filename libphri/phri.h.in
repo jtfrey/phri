@@ -1,0 +1,61 @@
+/**
+ * PHRI - PHRI is a Hypothetical RISC ISA
+ *
+ * A fake CPU created just for fun.
+ *
+ * This file is the baseline header, bringing in system headers and providing
+ * type defintions that exist across the entire code base.
+ *
+ */
+
+#ifndef __PHRI_H__
+#define __PHRI_H__
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define PHRI_VERSION_STRING "@PROJECT_VERSION@"
+#define PHRI_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define PHRI_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define PHRI_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+extern const char     *PHRIVersionString;
+extern const unsigned PHRIVersionMajor;
+extern const unsigned PHRIVersionMinor;
+extern const unsigned PHRIVersionPatch;
+
+/*
+ * Native OS
+ */
+#cmakedefine PHRI_OS_MACOSX
+#cmakedefine PHRI_OS_LINUX
+
+/**
+ * Type of a byte
+ */
+typedef uint8_t phri_byte_t;
+
+/**
+ * Type of a word
+ */
+typedef uint16_t phri_word_t;
+
+/**
+ * Type of an address
+ * Addresses are 20-bits in length, so the upper 12 bits of
+ * these values are unused.
+ */
+typedef uint32_t phri_addr_t;
+
+/**
+ * Type of an address
+ * Addresses are 20-bits in length, so the upper 12 bits of
+ * these values are unused.
+ */
+typedef phri_word_t phri_instr_t;
+
+#endif /* __PHRI_H__ */
+
