@@ -148,22 +148,22 @@ While there are no explicit `CMP` or `CMN` modes for multiple registers or short
 
 Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an ANDS that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by ANDS, the `SHR` and `SHL` instructions can be used with a shift of zero and a bit index.
 
-| Mnemonic           | Actual code               | Description                                                    |
-| :----------------- | :------------------------ | :------------------------------------------------------------- |
-| `NOT  Rd, Rx`      | `XOR Rd, Rx, R0`          | When Ry=R0, R0 is flipped to `0xFFFF` and Rd <= Rx ^ 0xFFFF    |
-| `NOTS Rd, Rx`      | `XORS Rd, Rx, R0`         | Same as `NOT` but status bits are set from the result          |
-| `BITS Rx`          | `ANDS R0, Rx, R0`         | When Ry=R0, R0 is flipped to `0xFFFF` and status bits are set  |
-|                    |                           | from the result of (Rx & 0xFFFF), which is discarded           |
-| `BIT  Rx, #<IMM4>` | `SH[R|L] Rx, #0, #<IMM3>` | `SHR` if 0 <= IMM4 < 8; `SHL` 8 <= IMM4 <= 15                  |
+| Mnemonic           | Actual code                | Description                                                    |
+| :----------------- | :------------------------- | :------------------------------------------------------------- |
+| `NOT  Rd, Rx`      | `XOR Rd, Rx, R0`           | When Ry=R0, R0 is flipped to `0xFFFF` and Rd <= Rx ^ 0xFFFF    |
+| `NOTS Rd, Rx`      | `XORS Rd, Rx, R0`          | Same as `NOT` but status bits are set from the result          |
+| `BITS Rx`          | `ANDS R0, Rx, R0`          | When Ry=R0, R0 is flipped to `0xFFFF` and status bits are set  |
+|                    |                            | from the result of (Rx & 0xFFFF), which is discarded           |
+| `BIT  Rx, #<IMM4>` | `SH[R\|L] Rx, #0, #<IMM3>` | `SHR` if 0 <= IMM4 < 8; `SHL` 8 <= IMM4 <= 15                  |
 
 Shortcut mnemonics for alterations to the status register are also provided:
 
 | Mnemonic              | Actual code              | Description      |
 | :-------------------- | :------------------ ---- | :--------------- |
-| `SRA  SYM \| #<IMM4>` | `SR  AND, SYM | #<IMM4>` | F <= F & IMM4    |
-| `SRO  SYM \| #<IMM4>` | `SR  OR, SYM | #<IMM4>`  | F <= F | IMM4    |
-| `SRX  SYM \| #<IMM4>` | `SR  XOR, SYM | #<IMM4>` | F <= F ^ IMM4    |
-| `SRS  SYM \| #<IMM4>` | `SR  SET, SYM | #<IMM4>` | F <= IMM4        |
+| `SRA  SYM \| #<IMM4>` | `SR  AND, SYM \| #<IMM4>` | F <= F & IMM4    |
+| `SRO  SYM \| #<IMM4>` | `SR  OR, SYM \| #<IMM4>`  | F <= F \| IMM4    |
+| `SRX  SYM \| #<IMM4>` | `SR  XOR, SYM \| #<IMM4>` | F <= F ^ IMM4    |
+| `SRS  SYM \| #<IMM4>` | `SR  SET, SYM \| #<IMM4>` | F <= IMM4        |
 
 
 ### Data movement
