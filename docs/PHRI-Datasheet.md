@@ -81,32 +81,32 @@ All instructions with bit 15 set are handled by the ALU.
 
 This category includes instructions to perform two's-complement addition/subtraction, shift and test bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).
 
-| Mnemonic                                | Bit pattern      | Description                                       |
-| :-------------------------------------- | :--------------- | :------------------------------------------------ |
-| `ADD{S}    Rd, Rx, Ry`                  | 1000S0XXX0YYYDDD | Rd <= Rx + Ry, {S}=set status bits            [1] |
-| `ADD{S}    Rd, Rx, #<IMM3>`             | 1000S0XXX1CCCDDD | Rd <= Rx + IMM3, {S}=set status bits          [1] |
-| `ADD{S}    Rd, #<IMM7>`                 | 1000S1CCCCCCCDDD | Rd <= Rd + IMM7, {S}=set status bits          [1] |
-| `SUB{S}    Rd, Rx, Ry`                  | 1001S0XXX0YYYDDD | Rd <= Rx - Ry, {S}=set status bits            [1] |
-| `SUB{S}    Rd, Rx, #<IMM3>`             | 1001S0XXX1CCCDDD | Rd <= Rx - IMM3, {S}=set status bits          [1] |
-| `SUB{S}    Rd, #<IMM7>`                 | 1001S1CCCCCCCDDD | Rd <= Rd - IMM7, {S}=set status bits          [1] |
-| `SH{C}L    Rd, Rx, Ry`                  | 1010C0XXX0YYYDDD | Rd <= Rx << (Ry&0xF)  {C}=C flag fill       [2,3] |
-| `SH{C}L    Rd, Rx, #<IMM3>`             | 1010C0XXX1cccDDD | Rd <= Rx << (IMM3+1), {C}=C flag fill       [2,4] |
-| `SH{C}L    Rd, #<IMM4>, #<IMM3>`        | 1010C1BBBccccDDD | Rd <= Rd << IMM4, {C}=C flag fill           [2,5] |
-| `SH{C}R    Rd, Rx, Ry`                  | 1011C0XXX0YYYDDD | Rd <= Rx >> (Ry&0xF), {C}=C flag fill       [2,6] |
-| `SH{C}R    Rd, Rx, #<IMM3>`             | 1011C0XXX1cccDDD | Rd <= Rx >> (IMM3+1), {C}=C flag fill       [2,7] |
-| `SH{C}R    Rd, #<IMM4>, #<IMM3>`        | 1011C1BBBccccDDD | Rd <= Rd >> IMM4, {C}=C flag fill           [2,8] |
-| `AND{S}    Rd, Rx, Ry`                  | 1100S0XXX0YYYDDD | Rd <= Rx & Ry, {S}=set status bits         [9,10] |
-| `AND{S}    Rd, Rx, #<IMM3>`             | 1100S0XXX1CCCDDD | Rd <= Rx & IMM3, {S}=set status bits          [9] |
-| `AND{S}    Rd, #<IMM7>`                 | 1100S1CCCCCCCDDD | Rd <= Rd & IMM7, {S}=set status bits          [9] |
-| `OR{S}     Rd, Rx, Ry`                  | 1101S0XXX0YYYDDD | Rd <= Rx | Ry, {S}=set status bits            [9] |
-| `OR{S}     Rd, Rx, #<IMM3>`             | 1101S0XXX1CCCDDD | Rd <= Rx | IMM3, {S}=set status bits          [9] |
-| `OR{S}     Rd, #<IMM7>`                 | 1101S1CCCCCCCDDD | Rd <= Rd | IMM7, {S}=set status bits          [9] |
-| `XOR{S}    Rd, Rx, Ry`                  | 1110S0XXX0YYYDDD | Rd <= Rx ^ Ry, {S}=set status bits         [9,10] |
-| `XOR{S}    Rd, Rx, #<IMM3>`             | 1110S0XXX1CCCDDD | Rd <= Rx ^ IMM3, {S}=set status bits          [9] |
-| `XOR{S}    Rd, #<IMM7>`                 | 1110S1CCCCCCCDDD | Rd <= Rd ^ IMM7, {S}=set status bits          [9] |
-| `CMP       Rd, #<IMM7>`                 | 111110CCCCCCCDDD | Z <= Rd - IMM7, set status bits              [11] |
-| `CMN       Rd, #<IMM7>`                 | 111111CCCCCCCDDD | Z <= Rd + IMM7, set status bits              [11] |
-| `SR        OP | #<IMM2>, SYM | #<IMM4>` | 111101II0000MCVZ | Alter F using OP and 4-bit constant       [12,13] |
+| Mnemonic                                | Bit pattern        | Description                                       |
+| :-------------------------------------- | :----------------- | :------------------------------------------------ |
+| `ADD{S}    Rd, Rx, Ry`                  | `1000S0XXX0YYYDDD` | Rd <= Rx + Ry, {S}=set status bits            [1] |
+| `ADD{S}    Rd, Rx, #<IMM3>`             | `1000S0XXX1CCCDDD` | Rd <= Rx + IMM3, {S}=set status bits          [1] |
+| `ADD{S}    Rd, #<IMM7>`                 | `1000S1CCCCCCCDDD` | Rd <= Rd + IMM7, {S}=set status bits          [1] |
+| `SUB{S}    Rd, Rx, Ry`                  | `1001S0XXX0YYYDDD` | Rd <= Rx - Ry, {S}=set status bits            [1] |
+| `SUB{S}    Rd, Rx, #<IMM3>`             | `1001S0XXX1CCCDDD` | Rd <= Rx - IMM3, {S}=set status bits          [1] |
+| `SUB{S}    Rd, #<IMM7>`                 | `1001S1CCCCCCCDDD` | Rd <= Rd - IMM7, {S}=set status bits          [1] |
+| `SH{C}L    Rd, Rx, Ry`                  | `1010C0XXX0YYYDDD` | Rd <= Rx << (Ry&0xF)  {C}=C flag fill       [2,3] |
+| `SH{C}L    Rd, Rx, #<IMM3>`             | `1010C0XXX1cccDDD` | Rd <= Rx << (IMM3+1), {C}=C flag fill       [2,4] |
+| `SH{C}L    Rd, #<IMM4>, #<IMM3>`        | `1010C1BBBccccDDD` | Rd <= Rd << IMM4, {C}=C flag fill           [2,5] |
+| `SH{C}R    Rd, Rx, Ry`                  | `1011C0XXX0YYYDDD` | Rd <= Rx >> (Ry&0xF), {C}=C flag fill       [2,6] |
+| `SH{C}R    Rd, Rx, #<IMM3>`             | `1011C0XXX1cccDDD` | Rd <= Rx >> (IMM3+1), {C}=C flag fill       [2,7] |
+| `SH{C}R    Rd, #<IMM4>, #<IMM3>`        | `1011C1BBBccccDDD` | Rd <= Rd >> IMM4, {C}=C flag fill           [2,8] |
+| `AND{S}    Rd, Rx, Ry`                  | `1100S0XXX0YYYDDD` | Rd <= Rx & Ry, {S}=set status bits         [9,10] |
+| `AND{S}    Rd, Rx, #<IMM3>`             | `1100S0XXX1CCCDDD` | Rd <= Rx & IMM3, {S}=set status bits          [9] |
+| `AND{S}    Rd, #<IMM7>`                 | `1100S1CCCCCCCDDD` | Rd <= Rd & IMM7, {S}=set status bits          [9] |
+| `OR{S}     Rd, Rx, Ry`                  | `1101S0XXX0YYYDDD` | Rd <= Rx | Ry, {S}=set status bits            [9] |
+| `OR{S}     Rd, Rx, #<IMM3>`             | `1101S0XXX1CCCDDD` | Rd <= Rx | IMM3, {S}=set status bits          [9] |
+| `OR{S}     Rd, #<IMM7>`                 | `1101S1CCCCCCCDDD` | Rd <= Rd | IMM7, {S}=set status bits          [9] |
+| `XOR{S}    Rd, Rx, Ry`                  | `1110S0XXX0YYYDDD` | Rd <= Rx ^ Ry, {S}=set status bits         [9,10] |
+| `XOR{S}    Rd, Rx, #<IMM3>`             | `1110S0XXX1CCCDDD` | Rd <= Rx ^ IMM3, {S}=set status bits          [9] |
+| `XOR{S}    Rd, #<IMM7>`                 | `1110S1CCCCCCCDDD` | Rd <= Rd ^ IMM7, {S}=set status bits          [9] |
+| `CMP       Rd, #<IMM7>`                 | `111110CCCCCCCDDD` | Z <= Rd - IMM7, set status bits              [11] |
+| `CMN       Rd, #<IMM7>`                 | `111111CCCCCCCDDD` | Z <= Rd + IMM7, set status bits              [11] |
+| `SR        OP | #<IMM2>, SYM | #<IMM4>` | `111101II0000MCVZ` | Alter F using OP and 4-bit constant       [12,13] |
 
 **[1]** For `ADDS` and `SUBS`, the value of the [C]arry flag will be added into the sum/difference and modified during execution to reflect carry/borrow.
 
