@@ -5,7 +5,7 @@ The PHRI (PHRI is a Hypothetical RISC ISA) is an invented 16-bit ISA.  It featur
 
 ## Register set
 
-The PHRI possesses eleven 16-bit registers.  There are eight general-purpose registers labelled R0 through R7; R0 is a read-only register that always contains a value of zero.  The remaining registers are usable in any capacity across the instructions, but the assembly mnemonics include aliases for each that convey a possible purpose:
+The PHRI possesses twelve 16-bit registers.  There are eight general-purpose registers labelled R0 through R7; R0 is a read-only register that always contains a value of zero.  The remaining registers are usable in any capacity across the instructions, but the assembly mnemonics include aliases for each that convey a possible purpose:
 
 | Index | Alias | Implied usage                                          |
 | :---- | :---- | :----------------------------------------------------- |
