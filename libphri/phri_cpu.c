@@ -107,13 +107,15 @@ phri_cpu_execinstr(
                     Accum = phri_word_add(
                                 Arg1,
                                 Arg2 + ((set_cond && (cpu->registers.F & kphri_sb_c)) ? 1 : 0),
-                                set_cond ? &cpu->registers.F : NULL);
+                                set_cond ? &cpu->registers.F : NULL,
+                                0);
                     break;
                 case kphri_alu_op_sub:
                     Accum = phri_word_add(
                                 Arg1,
                                 ~(Arg2 + ((set_cond && (cpu->registers.F & kphri_sb_c)) ? 1 : 0)) + 1,
-                                set_cond ? &cpu->registers.F : NULL);
+                                set_cond ? &cpu->registers.F : NULL,
+                                1);
                     break;
                 case kphri_alu_op_shl:
                     Accum = Arg1 << Arg2;
@@ -165,10 +167,10 @@ phri_cpu_execinstr(
                     if ( (cpu->registers.INSTR & kphri_alu_op_misc_cmpn_mask) == kphri_alu_op_misc_cmpn ) {
                         if ( (cpu->registers.INSTR & kphri_alu_op_misc_cmp_mask) == kphri_alu_op_misc_cmn ) {
                             // CMN is an addition with the result discarded:
-                            phri_word_add(Arg1, Arg2, &cpu->registers.F);
+                            phri_word_add(Arg1, Arg2, &cpu->registers.F, 0);
                         } else {
                             // CMP is a subtraction with the result discarded:
-                            phri_word_add(Arg1, ~Arg2 + 1, &cpu->registers.F);
+                            phri_word_add(Arg1, ~Arg2 + 1, &cpu->registers.F, 1);
                         }
                     }
                     break;

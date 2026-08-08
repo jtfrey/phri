@@ -211,7 +211,7 @@ phri_cpu_pc_adjust(
 {
     phri_byte_t      S;
     
-    cpu->registers.PC = phri_word_add(cpu->registers.PC, dPC, &S);
+    cpu->registers.PC = phri_word_add(cpu->registers.PC, dPC, &S, 0);
     if ( S & kphri_sb_c ) {
         cpu->cycles++;
         if ( dPC & 0b1000000000000000 )

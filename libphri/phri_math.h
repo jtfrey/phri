@@ -21,6 +21,7 @@
  * @param w2    addend word 2
  * @param S     pointer to a status byte to update, or NULL for no
  *              update
+ * @param invC  invert the [C]arry flag state (e.g. on SUB)
  * @return      the sum of w1 and w2
  */
 static inline
@@ -28,7 +29,8 @@ phri_word_t
 phri_word_add(
     phri_word_t w1,
     phri_word_t w2,
-    phri_byte_t *S
+    phri_byte_t *S,
+    phri_byte_t invC
 )
 {
     uint32_t    s = w1 + w2;
@@ -36,9 +38,9 @@ phri_word_add(
     
     // m = 1 when the signs on w1, w2 differ
     if ( S ) {
-        *S = (s ? 0 : kphri_sb_z) \
+        *S = ((s & 0xFFFF) ? 0 : kphri_sb_z) \
                 | ((s & 0b1000000000000000) ? kphri_sb_m : 0) \
-                | ((s & 0xFFFF0000) ? kphri_sb_c : 0) \
+                | (((s & 0xFFFF0000) ? kphri_sb_c : 0) ^ (invC ? kphri_sb_c : 0)) \
                 | ((!m && ((w1 & 0b1000000000000000) ^ (s & 0b1000000000000000))) ? kphri_sb_v : 0);
     }
     return (s & 0xFFFF);
