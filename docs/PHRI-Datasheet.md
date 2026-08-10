@@ -126,11 +126,11 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 **[9]** For `ANDS`, `ORS`, `XORS`, after the operation the [M]inus, o[V]erflow, and [C]arry flags in the status register are set to reflect the value of bits 15, 14, and 0, respectively.  The [Z]ero flag is set to reflect the value's being zero or not.
 
-**[10]** For `AND` and `XOR` with two source register operands, if `Ry` is `R0` the value of that register is inverted to `0xFFFF`, since that pattern is far more typically-used in bitwise and and exclusive or operations.
+**[10]** For `AND` and `XOR` with two source register operands, if `Ry` is `R0` the value of that register is inverted to `0xFFFF`, since that pattern is far more useful in bitwise and/exclusive or operations.
 
 **[11]** Normally the `ADDS` and `SUBS` instructions with `R0`/`Z` as the destination register suffice for comparisons, but that restricts non-destructive comparison with a 3-bit immediate value.  Explicit 7-bit compare/compare-negated instructions are present to address that deficiency.
 
-**[12]** The cluster of SR_ instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, XOR, or SET (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode.
+**[12]** The cluster of SR* instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, XOR, or SET (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode.
 
 **[13]** The constant bit pattern can be specified SYMbolically, using the four status bit symbols MCVZ in uppercase symbol for a `1` or lowercase `0`; omission of a symbol implies `0`.  A 4-bit numerical constant is permissible (though the programmer must ensure the correct ordering of the status bits).  E.g. the symbolic form `MZvc` equates with the numerical constant `0b1001` or `0x9` as well as the symbolic form `MZ`.
 
@@ -139,12 +139,12 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 While there are no explicit `CMP` or `CMN` modes for multiple registers or short (3-bit) constants, the assembler accepts pseudo-instructions that are translated to `SUBS` and `ADDS` instructions:
 
-| Mnemonic           | Actual code            | Description                                                    |
-| :----------------- | :--------------------- | :------------------------------------------------------------- |
-| `CMP  Rx, Ry`      | `SUBS R0, Rx, Ry`      | Subtract Ry from Rx, set flags, discard result                 |
-| `CMP  Rx, #<IMM3>` | `SUBS R0, Rx, #<IMM3>` | Subtract the 3-bit constant from Rx, set flags, discard result |
-| `CMN  Rx, Ry`      | `ADDS R0, Rx, Ry`      | Add Ry to Rx, set flags, discard result                        |
-| `CMN  Rx, #<IMM3>` | `ADDS R0, Rx, #<IMM3>` | Add the 3-bit constant to Rx, set flags, discard result        |
+| Mnemonic           | Actual code                  | Description                                                    |
+| :----------------- | :--------------------------- | :------------------------------------------------------------- |
+| `CMP  Rx, Ry`      | `SRCC; SUBS R0, Rx, Ry`      | Subtract Ry from Rx, set flags, discard result                 |
+| `CMP  Rx, #<IMM3>` | `SRCC; SUBS R0, Rx, #<IMM3>` | Subtract the 3-bit constant from Rx, set flags, discard result |
+| `CMN  Rx, Ry`      | `SRCC; ADDS R0, Rx, Ry`      | Add Ry to Rx, set flags, discard result                        |
+| `CMN  Rx, #<IMM3>` | `SRCC; ADDS R0, Rx, #<IMM3>` | Add the 3-bit constant to Rx, set flags, discard result        |
 
 Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an ANDS that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by ANDS, the `SHR` and `SHL` instructions can be used with a shift of zero and a bit index.
 
@@ -158,56 +158,74 @@ Inverting the bits in a word is a bitwise NOT; this can be effected using an exc
 
 Shortcut mnemonics for alterations to the status register are also provided:
 
-| Mnemonic              | Actual code              | Description      |
-| :-------------------- | :------------------ ---- | :--------------- |
+| Mnemonic              | Actual code               | Description      |
+| :-------------------- | :------------------------ | :--------------- |
 | `SRA  SYM \| #<IMM4>` | `SR  AND, SYM \| #<IMM4>` | F <= F & IMM4    |
-| `SRO  SYM \| #<IMM4>` | `SR  OR, SYM \| #<IMM4>`  | F <= F \| IMM4    |
+| `SRO  SYM \| #<IMM4>` | `SR  OR, SYM \| #<IMM4>`  | F <= F \| IMM4   |
 | `SRX  SYM \| #<IMM4>` | `SR  XOR, SYM \| #<IMM4>` | F <= F ^ IMM4    |
 | `SRS  SYM \| #<IMM4>` | `SR  SET, SYM \| #<IMM4>` | F <= IMM4        |
+| `SRCC`                | `SR  AND, McVZ`           | Clear carry      |
+| `SRSC`                | `SR  OR, mCvz`            | Set carry        |
 
 
 ### Data movement
 
 All instructions with bits 14 and 15 clear are data movement instructions.
 
-Data movement encompasses instructions that move words between registers in the processor as well as instructions that move data between registers and the system memory.
+Data movement encompasses instructions that move bits into registers; move bits to special-purpose registers in the processor; and move data between registers and the system memory.
 
 
 #### Inter-register
 
 Introducing values into registers is a fundamental behavior of a processor.  The ISA includes instructions that transfer values from one register to another — including the `MSEG` and `PC` registers — as well as instructions with embedded 8-bit constants to set the LSB or MSB of a register.
 
-| Mnemonic                  | Bit pattern        | Description                           |
-| :------------------------ | :----------------- | :------------------------------------ |
-| `MOV       Rd, Rx`        | `0000000000XXXDDD` | Rd <= Rx                              |
-| `MVN       Rd, Rx`        | `0000000001XXXDDD` | Rd <= ~Rx                             |
-| `MOV       Rd, PC, Rx`    | `0000000010XXXDDD` | Rd <= PC + Rx                         |
-| `MOV       PC, Rx`        | `0000000011XXX000` | PC <= Rx                              |
-| `MOV       Rd, MSEG`      | `0000000100000DDD` | Rd <= MSEG                            |
-| `MOV       MSEG, Rx`      | `0000000101XXX000` | MSEG <= Rx                            |
-| `MOV       MSEG, #<IMM4>` | `00000001100CC000` | MSEG <= IMM4               (2b const) |
-| `SEL       Rd, Rx, Ry`    | `0000001YYYXXXDDD` | Rd <= (Rd == 0) ? Rx : Ry             |
-| `MVL       Rd, #<IMM8>`   | `00010CCCCCCCCDDD` | Rd.LSB <= IMM8             (8b const) |
-| `MVH       Rd, #<IMM8>`   | `00011CCCCCCCCDDD` | Rd.MSB <= IMM8             (8b const) |
+| Mnemonic                               | Bit pattern        | Description                            |
+| :------------------------------------- | :----------------- | :------------------------------------- |
+| `MOV       PC, Rx`                     | `0000000000010XXX` | PC <= Rx                               |
+| `MOV       Rd, PC`                     | `0000000000011DDD` | Rd <= PC                               |
+| `MOV       DSEG, Rx`                   | `0000000000100XXX` | DSEG <= Rx & 0xF                       |
+| `MOV       Rd, DSEG`                   | `0000000000101DDD` | Rd <= DSEG                             |
+| `MOV       DSEG, #<IMM4>`              | `000000000011CCCC` | DSEG <= IMM4                           |
+| `BSWP      Rd, Rx`                     | `0000000001XXXDDD` | Rd <= (Rx << 8) \| (Rx >> 8)           |
+| `MOVN      Rd, #<IMM4>, LSL[0,4,8,12]` | `0000001SSCCCCDDD` | Rd <= (IMM4 << (SS\*4)) and sign-      |
+|                                        |                    | extended to fill all 16-bits of Rd     |
+| `MOV       Rd, #<IMM4>, LSL[0,4,8,12]` | `0000010SSCCCCDDD` | Rd <= <…\|IMM4\|…>, where IMM4 is      |
+|                                        |                    | inserted at the bit index indicated by |
+|                                        |                    | (SS\*4); all other bits in Rd are      |
+|                                        |                    | are preserved                          |
+| `MOVZ      Rd, #<IMM4>, LSL[0,4,8,12]` | `0000011SSCCCCDDD` | Rd <= <…\|IMM4\|…>, where IMM4 is      |
+|                                        |                    | inserted at the bit index indicated by |
+|                                        |                    | (SS\*4); all other bits in Rd are zero |
+| `MOV       Rd, Rx, LSL[0…15]`          | `000010SSSSXXXDDD` | Rd <= Rx << IMM4                       |
+| `MOV       Rd, Rx, LSR[0…15]`          | `000011SSSSXXXDDD` | Rd <= Rx >> IMM4                       |
+| `MOVL      Rd, #<IMM8>`                | `00010CCCCCCCCDDD` | Rd <= (Rd & 0xFF00) | IMM8             |
+| `MOVH      Rd, #<IMM8>`                | `00011CCCCCCCCDDD` | Rd <= (Rd & 0x00FF) | (IMM8 << 8)      |
 
 ##### Pseudo-instructions
 
-Zeroing a register is a common action; the presence of the `R0`/`Z` register makes this easy, so a pseudo-instruction is provided.  The `MVL` and `MVH` instructions only affect the LSB/MSB of the register; it is often necessay to zero the opposing byte.
+A basic register-to-register move is implemented using the `OR` and negate register move with `XOR`:
 
-| Mnemonic               | Actual code                    | Description            |
-| :--------------------- | :----------------------------- | :--------------------- |
-| `ZERO     Rd`          | `MOV  Rd, R0`                  | Rx <= `$0000`          |
-| `MV0L     Rd, #<IMM8>` | `MOV  Rd, R0; MVL Rd, #<IMM8>` | Rx <= `$00XX`          |
-| `MVH0     Rd, #<IMM8>` | `MOV  Rd, R0; MVH Rd, #<IMM8>` | Rx <= `$XX00`          |
+| Mnemonic      | Actual code       | Description                              |
+| :------------ | :---------------- | :--------------------------------------- |
+| `MOV  Rd, Rx` | `OR   Rd, Rx, R0` | Rd <= Rx | R0 = Rx | 0x0000 = Rx         |
+| `MVN  Rd, Rx` | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
+| `MV0  Rd`     | `OR   Rd, R0, R0` | Rd <= R0 | R0 = 0x0000 | 0x0000 = 0x0000 |
+
+The 8-bit immediate mode on `MOV` always preserves the opposite byte in the register, so pseudo-instructions that include zeroing the destination register are helpful:
+
+| Mnemonic           | Actual code                | Description                              |
+| :----------------- | :------------------------- | :--------------------------------------- |
+| `MV0L Rd, #<IMM8>` | `MV0 Rd; MOVL Rd, #<IMM8>` | Rd <= 0x0000 | (IMM8)                    |
+| `MVH0 Rd, #<IMM8>` | `MV0 Rd; MOVH Rd, #<IMM8>` | Rd <= 0x0000 | (IMM8 << 8)               |
 
 Setting a register to a memory address or label happens with great frequency; a pseudo-instruction is included to improve code readability.
 
-| Mnemonic               | Actual code                            | Description              |
-| :--------------------- | :------------------------------------- | :----------------------- |
-| `ADR      Rd, <LABEL>` | `MVL Rd, LABEL.LSB; MVH Rd, LABEL.MSB` | Rd <= address of label   |
-| `ADR      Rd, $SHHLL`  | `MVL Rd, #$LL; MVH Rd, #$HH`           | Rd <= `$HHLL`            |
-| `ADRS     <LABEL>`     | `MOV MSEG, (LABEL & #0xF000) >> #16`   | DSEG <= segment of label |
-| `ADRS     Rd, $SHHLL`  | `MOV MSEG, (LABEL & #$SHHLL) >> #16`   | DSEG <= segment of addr  |
+| Mnemonic               | Actual code                              | Description              |
+| :--------------------- | :--------------------------------------- | :----------------------- |
+| `ADR      Rd, <LABEL>` | `MOVL Rd, LABEL.LSB; MOVH Rd, LABEL.MSB` | Rd <= address of label   |
+| `ADR      Rd, $SHHLL`  | `MOVL Rd, #$LL; MOVH Rd, #$HH`           | Rd <= `$HHLL`            |
+| `ADRS     <LABEL>`     | `MOV DSEG, (LABEL & #0xF0000) >> #16`    | DSEG <= segment of label |
+| `ADRS     Rd, $SHHLL`  | `MOV DSEG, (LABEL & #$SHHLL) >> #16`     | DSEG <= segment of addr  |
 
 With `R6` being the traditional register used for linking (see the section on Branching instructions), a bare return from a subroutine pseudo-instruction is possible (as is one with a register specified):
 
@@ -226,14 +244,14 @@ The ISA includes a number of instructions which move data between system memory 
 | `LDR       Rd, [Rx+Ry]`       | `0010001YYYXXXDDD` | Rd <= [Rx + Ry]                       |
 | `LDL       Rd, [Rx]`          | `0010000000XXXDDD` | Rd.LSB <= [Rx].LSB                    |
 | `LDH       Rd, [Rx]`          | `0010000001XXXDDD` | Rd.MSB <= [Rx].MSB                    |
-| `LDR.<CC>  Rd, [Rx]`          | `0010010SSSXXXDDD` | If CC: Rd <= [Rx]                     |
+| `LDR.<CC>  Rd, [Rx]`          | `0010010cccXXXDDD` | If CC: Rd <= [Rx]                     |
 | `LDR       Rd, [Rx], #<IMM4>` | `001010CCCCXXXDDD` | Rd <= [Rx], Rx += IMM4                |
 | `LDR       Rd, [Rx], Ry`      | `0010110YYYXXXDDD` | Rd <= [Rx], Rx += Ry                  |
 | `STO       [Rx+Ry], Rd`       | `0011001YYYXXXDDD` | [Rx + Ry] <= Rd (no offset, Ry=Z)     |
 | `STL       [Rx], Rd`          | `0011000000XXXDDD` | [Rx].LSB <= Rd.LSB                    |
 | `STH       [Rx], Rd`          | `0011000001XXXDDD` | [Rx].MSB <= Rd.MSB                    |
-| `STO.<CC>  [Rx], Rd`          | `0011010SSSXXXDDD` | If CC: [Rx] <= Rd                     |
-| `STO       #<IMM4>, [Rx], Rd` | `001110CCCCXXXDDD` | [Rx] <= Rd, Rx += IMM4                |
+| `STO.<CC>  [Rx], Rd`          | `0011010cccXXXDDD` | If CC: [Rx] <= Rd                     |
+| `STO       #<IMM4>, [Rx], Rd` | `001110CCCCXXXDDD` | Rx += IMM4, [Rx] <= Rd                |
 | `STO       Ry, [Rx], Rd`      | `0011110YYYXXXDDD` | Rx += Ry, [Rx] <= Rd                  |
 
 The ISA includes load and store instructions that automatically adjust the address register.  For `LDR` instructions the adjustment is made after the data has been loaded; for `STO` the adjustment is made before the data is loaded.  Load instructions are thus post-increment or post-decrement, while store instructions are pre-increment or pre-decrement.  The most common use pattern is pre-decrement `STO` with post-increment `LDR`:  a stack.
@@ -260,10 +278,10 @@ The value at the memory address in `SP` is read into `R5`, then `SP` is post-inc
 
 Because stacks are frequently used, the ISA includes pseudo instructions to simplify their use.
 
-| Mnemonic      | Actual code          | Description                   |
-| :------------ | :------------------- | :---------------------------- |
-| `PUSH     Rx` | `STO  #-2, [SP], Rx` | Push Rx to the stack in `SP`  |
-| `POP      Rx` | `LDR  Rx, [SP], #+2` | Pop Rx from the stack in `SP` |
+| Mnemonic               | Actual code                      | Description                          |
+| :--------------------- | :------------------------------- | :----------------------------------- |
+| `PUSH     Rx{, Ry, …}` | `STO  #-2, [SP], R#` for each R# | Push Rx, Ry, … to the stack in `SP`  |
+| `POP      Rx{, Ry, …}` | `LDR  R#, [SP], #+2` for each R# | Pop Rx, Ry, … from the stack in `SP` |
 
 Loading/storing data to the address in a register without an offset is realized using `R0`/`Z` as the `Ry` operand, but a pseudo-instruction that omits the explicit specification of `R0`/`Z` is provided:
 
@@ -295,7 +313,7 @@ Since `x` is even, the conditional fails and the increment must be skipped by br
 
 ```
             MV0L        A, #18          ; Set A to 0x0012
-            BRL         two_a_plus_one  ; copy the PC to R6/L, then set the PC to the subroutine save_value
+            BRL         two_a_plus_one  ; copy the PC to R6/L, then offset the PC to reach subroutine two_a_plus_one
               :
             
             ADR         R1, three_a     ; M <= address of subroutine three_a

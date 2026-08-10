@@ -32,10 +32,10 @@ enum __attribute__((packed)) {
     kphri_alu_op_misc               = 0b1111000000000000,   /*!< Miscellaneous */
     kphri_alu_op_misc_cmpn_mask     = 0b0000100000000000,   /*!< 1. Misc: if this bit is set… */
     kphri_alu_op_misc_cmpn          = 0b0000100000000000,   /*!< …it's CMP/CMN */
-    kphri_alu_op_misc_sr_mask       = 0b0000010000000000,   /*!< 2. Misc: if this bit is set… */
-    kphri_alu_op_misc_sr            = 0b0000010000000000,   /*!< …it's CMP/CMN */
     kphri_alu_op_misc_cmp_mask      = 0b0000010000000000,   /*!< 1a. CMP/CMN: if this bit is set… */
     kphri_alu_op_misc_cmn           = 0b0000010000000000,   /*!< …it's CMN */
+    kphri_alu_op_misc_sr_mask       = 0b0000010000000000,   /*!< 2. Misc: if this bit is set… */
+    kphri_alu_op_misc_sr            = 0b0000010000000000,   /*!< …it's an SR instruction */
     kphri_alu_op_misc_sr_op_mask    = 0b0000001100000000,   /*!< 2a. The bits in these positions… */
     kphri_alu_op_misc_sr_op_and     = 0b0000000000000000,   /*!< …select AND… */
     kphri_alu_op_misc_sr_op_or      = 0b0000000100000000,   /*!< …select OR… */

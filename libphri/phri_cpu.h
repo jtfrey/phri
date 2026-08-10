@@ -15,6 +15,22 @@
 #include "phri_buslink.h"
 #include "phri_math.h"
 
+enum {
+    kphri_register_index_Z      = 0,
+    kphri_register_index_I      = 1,
+    kphri_register_index_J      = 2,
+    kphri_register_index_A      = 3,
+    kphri_register_index_B      = 4,
+    kphri_register_index_M      = 5,
+    kphri_register_index_L      = 6,
+    kphri_register_index_SP     = 7,
+    kphri_register_index_PC     = 8,
+    kphri_register_index_INSTR  = 9,
+    kphri_register_index_MOFF   = 10,
+    kphri_register_index_MSEG   = 11,
+    kphri_register_index_F      = 12
+};
+
 typedef struct __attribute__((packed)) {
     phri_buslink_t           *bus;
     union __attribute__((packed)) {
@@ -209,9 +225,10 @@ phri_cpu_pc_adjust(
     phri_word_t      dPC
 )
 {
-    phri_byte_t      S;
+    phri_byte_t      S, invC;
     
-    cpu->registers.PC = phri_word_add(cpu->registers.PC, dPC, &S, 0);
+    invC = ( dPC & 0b1000000000000000 ) ? 1 : 0;
+    cpu->registers.PC = phri_word_add(cpu->registers.PC, dPC, &S, invC);
     if ( S & kphri_sb_c ) {
         cpu->cycles++;
         if ( dPC & 0b1000000000000000 )

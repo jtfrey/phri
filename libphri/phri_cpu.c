@@ -229,18 +229,14 @@ phri_cpu_execinstr(
         }
     }
     else {
-        // Data movement; the destination register is a common component across
-        // many of the opcodes, so decode that now:
-        unsigned int    Rd = cpu->registers.INSTR & kphri_data_op_rd_mask;
-        // The data movement unit has it's own status register for address computation
-        phri_byte_t     S;
-        
         if ( cpu->registers.INSTR & kphri_data_op_mem ) {
             // Memory-based instructions
-            phri_word_t Rx = (cpu->registers.INSTR & kphri_data_op_rx_mask) >> kphri_data_op_rx_shift;
-            phri_word_t is_cond = 1;
-            phri_word_t dRx = 0;            
-            phri_word_t mask = 0x0000, set=0xFFFF, is_writeback=0;
+            // The data movement unit has it's own status register for address computation
+            phri_byte_t     S, Rd = cpu->registers.INSTR & kphri_data_op_rd_mask;
+            phri_byte_t     Rx = (cpu->registers.INSTR & kphri_data_op_rx_mask) >> kphri_data_op_rx_shift;
+            phri_word_t     is_cond = 1;
+            phri_word_t     dRx = 0;            
+            phri_word_t     mask = 0x0000, set=0xFFFF, is_writeback=0;
             
             if ( cpu->registers.INSTR & kphri_data_op_autoinc ) {
                 // Auto-increment instruction:
@@ -307,48 +303,92 @@ phri_cpu_execinstr(
                 }
             }
         } else {
-            // Interregister instructions
-            if ( cpu->registers.INSTR & kphri_data_op_ir_byte ) {
-                // Byte-based LDR/STR:
-                if ( cpu->registers.INSTR & kphri_data_op_ir_byte_hi ) {
-                    phri_cpu_wrr(cpu, Rd, (cpu->registers.R[Rd] & 0x00FF) | ((cpu->registers.INSTR << 5) & 0xFF00));
+            phri_byte_t     dsti, shift2;
+            phri_word_t     arg1, arg2, mask1;
+            
+            if ( cpu->registers.INSTR & kphri_data_op_mov_8b_mask ) {
+                // 8-bit immediate mode
+                arg1 = phri_cpu_rdr(cpu, dsti);
+                arg2 = (cpu->registers.INSTR & kphri_data_op_mov_8b_imm8_mask);
+                dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                if ( cpu->registers.INSTR & kphri_data_op_mov_8b_lohi_mask ) {
+                    shift2 = (8 - kphri_data_op_mov_8b_imm8_shift);
+                    mask1 = 0x00FF;
                 } else {
-                    phri_cpu_wrr(cpu, Rd, (cpu->registers.R[Rd] & 0xFF00) | ((cpu->registers.INSTR >> 3) & 0x00FF));
+                    shift2 = 0x80 | kphri_data_op_mov_8b_imm8_shift;
+                    mask1 = 0xFF00;
                 }
-            }
-            else {
-                uint16_t    Rx = (cpu->registers.INSTR >> 3) & 0b111;
-                
-                if ( cpu->registers.INSTR & kphri_data_op_ir_select ) {
-                    // Conditional selection
-                    uint16_t    Ry = (cpu->registers.INSTR >> 6) & 0b111;
-                    
-                    phri_cpu_wrr(cpu, Rd, cpu->registers.R[Rd] ? cpu->registers.R[Rx] : cpu->registers.R[Ry]);
+            } else if ( cpu->registers.INSTR & kphri_data_op_mov_shreg_mask ) {
+                // Shifted register
+                dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                arg1 = mask1 = 0x0000;
+                arg2 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_data_op_mov_shreg_srci_mask) >> kphri_data_op_mov_shreg_srci_shift);
+                shift2 = ((cpu->registers.INSTR & kphri_data_op_mov_shreg_shift_mask) >> kphri_data_op_mov_shreg_shift_shift) |
+                        ((cpu->registers.INSTR & kphri_data_op_mov_shreg_lr_mask) ? 0x80 : 0x00);
+            } else if ( cpu->registers.INSTR & kphri_data_op_mov_4b_mask ) {
+                // 4-bit immediate mode
+                dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                shift2 = (cpu->registers.INSTR & kphri_data_op_mov_4b_shift_mask) >> (kphri_data_op_mov_4b_shift_shift - 2);
+                arg2 = ((cpu->registers.INSTR & kphri_data_op_mov_4b_imm4_mask) >> kphri_data_op_mov_4b_imm4_shift) << shift2;
+                if ( cpu->registers.INSTR & kphri_data_op_mov_4b_zero_mask ) {
+                    arg1 = mask1 = 0x0000;
+                } else {
+                    arg1 = phri_cpu_rdr(cpu, dsti);
+                    mask1 = ~(0x000F << shift2);
                 }
-                else if ( cpu->registers.INSTR & kphri_data_op_ir_mseg ) {
-                    // MSEG register
-                    if ( cpu->registers.INSTR & kphri_data_op_ir_mseg_imm4 ) {
-                        cpu->registers.DSEG = (cpu->registers.INSTR >> 3) & 0b11;
-                    }
-                    else if ( (cpu->registers.INSTR & kphri_data_op_ir_mseg_rx) == kphri_data_op_ir_mseg_rx ) {
-                        cpu->registers.DSEG = cpu->registers.R[(cpu->registers.INSTR >> 3) & 0b111] & 0xF;
-                    }
-                    else {
-                        phri_cpu_wrr(cpu, cpu->registers.INSTR & 0b111, cpu->registers.MSEG);
-                    }
-                }
-                else if ( cpu->registers.INSTR & kphri_data_op_ir_pc ) {
-                    // PC register
-                    if ( (cpu->registers.INSTR & kphri_data_op_ir_pc_set) == kphri_data_op_ir_pc_set ) {
-                        cpu->registers.PC = cpu->registers.R[Rx];
+            } else if ( cpu->registers.INSTR & kphri_data_op_movn_mask ) {
+                // 4-bit negated immediate mode
+                dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                shift2 = (cpu->registers.INSTR & kphri_data_op_mov_4b_shift_mask) >> (kphri_data_op_mov_4b_shift_shift - 2);
+                arg2 = ((cpu->registers.INSTR & kphri_data_op_mov_4b_imm4_mask) >> kphri_data_op_mov_4b_imm4_shift) ^ 0x000F;
+                arg1 = 0xFFFF;
+                mask1 = ~(0x000F << shift2);
+            } else if ( cpu->registers.INSTR & kphri_data_op_bswp_mask ) {
+                // Byte swap mode
+                dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                arg1 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_data_op_bswp_srci_mask) >> kphri_data_op_bswp_srci_shift) >> 8;
+                mask1 = 0x00FF;
+                arg2 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_data_op_bswp_srci_mask) >> kphri_data_op_bswp_srci_shift);
+                shift2 = 8;
+            } else if ( cpu->registers.INSTR & kphri_data_op_dseg_mask ) {
+                if ( cpu->registers.INSTR & kphri_data_op_dseg_4b_mask ) {
+                    // DSEG <- 4-bit immediate
+                    dsti = kphri_register_index_MSEG;
+                    arg1 = phri_cpu_rdr(cpu, kphri_register_index_MSEG);
+                    mask1 = 0x00F0;
+                    arg2 = (cpu->registers.INSTR & kphri_data_op_dseg_4b_imm4);
+                    shift2 = 0;
+                } else {
+                    // Register <-> DSEG
+                    if ( cpu->registers.INSTR & kphri_data_op_pcdseg_rd_mask ) {
+                        dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                        arg1 = phri_cpu_rdr(cpu, kphri_register_index_MSEG);
+                        mask1 = 0x000F;
+                        arg2 = 0x0000;
+                        shift2 = 0;
                     } else {
-                        phri_cpu_wrr(cpu, Rd, cpu->registers.PC + cpu->registers.R[Rx]);
+                        dsti = kphri_register_index_MSEG;
+                        arg1 = phri_cpu_rdr(cpu, kphri_register_index_MSEG);
+                        mask1 = 0x00F0;
+                        arg2 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_data_op_mov_dsti)) & 0xF;
+                        shift2 = 0;
                     }
                 }
-                else {
-                    phri_cpu_wrr(cpu, Rd, (cpu->registers.INSTR & kphri_data_op_ir_negate) ? ~cpu->registers.R[Rx] : cpu->registers.R[Rx]);
+            } else if ( cpu->registers.INSTR & kphri_data_op_pc_mask ) {
+                // Register <-> PC
+                if ( cpu->registers.INSTR & kphri_data_op_pcdseg_rd_mask ) {
+                    dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
+                    arg1 = mask1 = 0x0000;
+                    arg2 = phri_cpu_rdr(cpu, kphri_register_index_PC);
+                    shift2 = 0;
+                } else {
+                    dsti = kphri_register_index_PC;
+                    arg1 = mask1 = 0x0000;
+                    arg2 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_data_op_mov_dsti));
+                    shift2 = 0;
                 }
             }
+            phri_cpu_wrr(cpu, dsti, (arg1 & mask1) | ((shift2 & 0x80) ? (arg2 >> (0x80 ^ shift2)) : (arg2 << shift2)));
         }
     }
 }
