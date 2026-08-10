@@ -1,0 +1,16 @@
+__MAIN:             MV0L    R1, #10
+                    MV0L    R2, #0xCD
+                    BRL     MULTIPLY
+ALL_DONE:           BR      ALL_DONE
+MULTIPLY:           PUSH    R1, R2
+                    MOV     R3, R0
+                    BITS    R2
+                    BR.CC   NO_PART_SUM
+NEXT_PART_SUM:      ADD     R3, R3, R1
+NO_PART_SUM:        SHL     R1, R1, #1
+                    SHR     R2, #1, #0
+                    BR.CS   NEXT_PART_SUM
+                    CMP     R2, R0
+                    BR.NE   NO_PART_SUM
+                    POP     R2, R1
+                    RET
