@@ -8,7 +8,7 @@ That is pronounced like "fry" — you know, my last name.
 
 The [processor data sheet](docs/PHRI-Datasheet.md) contains an extensive description of the ISA.  Some of those initial design ideas were relaxed:  the address bus eventually got another 4 bits, making a whole 1 MiB of memory addressable.  Granted, in a rather *creative* way.
 
-Instructions are constructed with decode logic starting at the MSb and moving downwards:  if bit 15 is set the instruction targets the ALU and the remaining 15 bits are available, otherwise bit 14 selects data movement versus branching classes and there are 14 bits available.  The ALU class uses bits 14…12 as an opcode field (8 operators) and bit 11 selects whether or not to enable carry-in and status flag updates after the operaion.  For 7 of the operators (0…6) the remaining 11 bits encode three addressing modes:
+Instructions are constructed with decode logic starting at the MSb and moving downwards:  if bit 15 is set the instruction targets the ALU and the remaining 15 bits are available, otherwise bit 14 selects data movement versus branching classes and there are 14 bits available.  The ALU class uses bits 14…12 as an opcode field (8 operators) and bit 11 selects whether or not to enable carry-in and status flag updates after the operation.  For 7 of the operators (0…6) the remaining 11 bits encode three addressing modes:
 
 ```
  F E D C B A 9 8 7 6 5 4 3 2 1 0
