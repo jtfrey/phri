@@ -14,6 +14,7 @@
 
 #include "phri_buslink.h"
 #include "phri_math.h"
+#include "phri_alu.h"
 
 enum {
     kphri_register_index_Z      = 0,
@@ -63,6 +64,7 @@ typedef struct __attribute__((packed)) {
         };
     } registers;
     uint64_t                cycles;
+    phri_alu_t              alu;
 } phri_cpu_t;
 
 
@@ -108,6 +110,11 @@ phri_cpu_summary(
            "| ---- B U S --------- B U S --------- B U S --------- B U S ------ |\n"
            "|                                                                   |\n"
            "|  DATA  = 0x%17$04hX [%17$6hd|%17$-6hu]    ADDR = $%18$05hX                  |\n"
+           "|                                                                   |\n"
+           "| ---- A L U --------- A L U --------- A L U --------- A L U ------ |\n"
+           "|                                                                   |\n"
+           "|   ARG1 = 0x%19$04hX     µop = %20$02hhX     ARG2 = 0x%21$04hX    FLAGS = 0x%22$02hhX    |\n"
+           "|  MASK1 = 0x%23$04hX  SHIFT1 = %24$02hhX   SHIFT2 = 0x%25$02hhX     RESULT = 0x%26$04hX  |\n"
            "|___________________________________________________________________|\n"
            "\n",
            cpu->registers.R[0], cpu->registers.R[1], cpu->registers.R[2], cpu->registers.R[3],
@@ -115,7 +122,9 @@ phri_cpu_summary(
            cpu->registers.PC, cpu->registers.F, status,
            cpu->registers.INSTR, cpu->registers.PSEG, cpu->registers.DSEG, cpu->registers.MOFF,
            cpu->cycles,
-           cpu->bus->data, cpu->bus->addr);
+           cpu->bus->data, cpu->bus->addr,
+           cpu->alu.arg1, cpu->alu.uop, cpu->alu.arg2, cpu->alu.flags,
+           cpu->alu.mask1, cpu->alu.shift1, cpu->alu.shift2, cpu->alu.result);
 }
 
 static inline

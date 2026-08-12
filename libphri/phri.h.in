@@ -34,6 +34,14 @@ extern const unsigned PHRIVersionPatch;
 #cmakedefine PHRI_OS_LINUX
 
 /**
+ * Type of a bit
+ */
+typedef enum __attribute__((packed)) {
+    kphri_bit_off   = 0,
+    kphri_bit_on    = 1
+} phri_bit_t;
+
+/**
  * Type of a byte
  */
 typedef uint8_t phri_byte_t;

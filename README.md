@@ -61,6 +61,8 @@ The instructions working with the PC and DSEG registers were allocated in the mi
 
 The first alteration was to move the special-case instructions first:  for the PC and DSEG instructions, one of the registers is always implied and there are no options so fewer operand bits are needed.  Instructions use from 5 to 6 bits.
 
-The next-largest instruction loads a 4-bit immediate value (possibly shifted 0, 4, 8, or 12 bit positions) into a register — sign-extending as appropriate.  The shifts are not arbitrary, they are nibble-aligned:  0, 4, 8, 12, using just 2 bits in the instruction.  That's a 3-bit register index, 4-bit immediate value, 2-bit shift, and a single decode bit: 10 bits.
+The next-largest triad of instructions load a 4-bit immediate value (possibly shifted 0, 4, 8, or 12 bit positions, possibly negated, or with existing bits outside the 4-bit constant retained or zeroed) into a register — sign-extending as appropriate.  The shifts are not arbitrary, they are nibble-aligned:  0, 4, 8, 12, using just 2 bits in the instruction.  That's a 3-bit register index, 4-bit immediate value, 2-bit shift, and a single decode bit: 10 bits.
 
-The jump from 6 to 10 bits leaves some room for other instructions in between.
+The jump from 6 to 10 bits leaves some room for other instructions in between.  Just above the special-case `MOV` instructions is a byte-swap instruction that flips the low- and high-bytes of a register with the result going into a register.
+
+The remaining `MOV` instructions are unchanged.

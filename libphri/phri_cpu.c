@@ -13,6 +13,17 @@
 #include "phri_data.h"
 #include "phri_branch.h"
 
+static int phri_uop_map[] = {
+                kphri_alu_uop_add,      /*  + = 000 */
+                kphri_alu_uop_add,      /*  - = 001 */
+                kphri_alu_uop_or,       /* << = 010 */
+                kphri_alu_uop_or,       /* >> = 011 */
+                kphri_alu_uop_and,      /*  & = 100 */
+                kphri_alu_uop_or,       /*  | = 101 */
+                kphri_alu_uop_xor };    /*  ^ = 110 */
+/* Using the indices above, mark an ALU operation for not2 behavior */
+static phri_byte_t phri_not2_map = 0b00000010;  
+
 void
 phri_cpu_execinstr(
     phri_cpu_t  *cpu
@@ -23,161 +34,127 @@ phri_cpu_execinstr(
     
     if ( cpu->registers.INSTR & kphri_instr_kind_alu_mask ) {
         // ALU:
+        phri_word_t     Rd_idx = (cpu->registers.INSTR & kphri_instr_mask_alu_dst);
         phri_word_t     opcode = (cpu->registers.INSTR & kphri_instr_mask_alu_opcd);
-        phri_byte_t     set_cond = (cpu->registers.INSTR & kphri_instr_mask_alu_scond) ? 1 : 0;
-        phri_word_t     Rd = (cpu->registers.INSTR & kphri_instr_mask_alu_dst);
-        phri_word_t     Arg1 = 0x0000, Arg2 = 0x0000, Arg3 = 0x0000, Accum;
         
-        if ( (opcode == kphri_alu_op_misc) && ((cpu->registers.INSTR & kphri_alu_op_misc_cmpn_mask) != kphri_alu_op_misc_cmpn) ) {
-            // SR[AOXS] instruction -- note that there is room here for additional instruction groups if 
-            // the kphri_alu_op_misc_sr_mask bit were NOT set, but that's for future expansion (haha)
-            switch ( cpu->registers.INSTR & kphri_alu_op_misc_sr_op_mask ) {
-                case kphri_alu_op_misc_sr_op_and:
-                    cpu->registers.F &= (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
-                    break;
-                case kphri_alu_op_misc_sr_op_or:
-                    cpu->registers.F |= (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
-                    break;
-                case kphri_alu_op_misc_sr_op_xor:
-                    cpu->registers.F ^= (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
-                    break;
-                case kphri_alu_op_misc_sr_op_set:
-                    cpu->registers.F = (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
-                    break;
+        phri_alu_init(cpu->alu);
+        if ( opcode == kphri_alu_op_misc ) {
+            // Miscellaneous
+            if ( (cpu->registers.INSTR & kphri_alu_op_misc_cmpn_mask) != kphri_alu_op_misc_cmpn ) {
+                // SR[AOXS] instruction -- note that there is room here for additional instruction groups if 
+                // the kphri_alu_op_misc_sr_mask bit were NOT set, but that's for future expansion (haha)
+                switch ( cpu->registers.INSTR & kphri_alu_op_misc_sr_op_mask ) {
+                    case kphri_alu_op_misc_sr_op_and:
+                        cpu->registers.F &= (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
+                        break;
+                    case kphri_alu_op_misc_sr_op_or:
+                        cpu->registers.F |= (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
+                        break;
+                    case kphri_alu_op_misc_sr_op_xor:
+                        cpu->registers.F ^= (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
+                        break;
+                    case kphri_alu_op_misc_sr_op_set:
+                        cpu->registers.F = (cpu->registers.INSTR & kphri_instr_mask_misc_sr_const);
+                        break;
+                }
+            }
+            else if ( (cpu->registers.INSTR & kphri_alu_op_misc_cmpn_mask) == kphri_alu_op_misc_cmpn ) {
+                cpu->alu.arg1 = phri_cpu_rdr(cpu, Rd_idx);
+                cpu->alu.arg2 = (cpu->registers.INSTR & kphri_instr_mask_alu_src2c) >> kphri_instr_mask_alu_src2_shift;
+                // Sign-extend the 7-bit constant to 16-bit:
+                if ( cpu->alu.arg2 & 0b1000000 ) cpu->alu.arg2 |= 0b1111111110000000;
+                cpu->alu.not2 = ((cpu->registers.INSTR & kphri_alu_op_misc_cmp_mask) == kphri_alu_op_misc_cmn) ? kphri_bit_off : kphri_bit_on;
+                phri_alu_exec(&cpu->alu);
+                cpu->registers.F = cpu->alu.flags;
             }
         } else {
-            phri_byte_t     set_dest = 1;
+            // Standard arithmetic/bitwise logic operations
+            phri_bit_t      set_cond = (cpu->registers.INSTR & kphri_instr_mask_alu_scond) ? kphri_bit_on : kphri_bit_off;
+            phri_byte_t     op_idx = (cpu->registers.INSTR & kphri_instr_mask_alu_uop_mask) >> kphri_instr_mask_alu_uop_shift;
+            phri_word_t     postshift_bitmask = 0b0000000000000000;
+            
+            cpu->alu.uop = phri_uop_map[op_idx];
+            cpu->alu.carry_in = (set_cond && (cpu->registers.F & kphri_sb_c)) ? kphri_bit_on : kphri_bit_off;
+            cpu->alu.not2 = (phri_not2_map & (0b1 << op_idx)) ? kphri_bit_on : kphri_bit_off;
             
             if ( cpu->registers.INSTR & kphri_instr_mask_alu_src1t ) {
-                // 7-bit const, sign-extend or bias if necessary
-                Arg1 = phri_cpu_rdr(cpu, Rd);
-                Arg2 = (cpu->registers.INSTR & kphri_instr_mask_alu_src1c) >> kphri_instr_mask_alu_src2_shift;
+                // 7-bit const:
                 switch ( opcode ) {
                     case kphri_alu_op_shr:
-                        // Carry bit will be selected from this position:
-                        Arg3 = (Arg2 & kphri_instr_mask_alu_src1_shCbit) >> kphri_instr_mask_alu_src1_shCbit_shift;
-                        // Shift distance from the rest of the 7-bit constant:
-                        Arg2 &= kphri_instr_mask_alu_src1_shdist;
+                    case kphri_alu_op_shl: {
+                        phri_byte_t     postshift_bit_idx;
+                        
+                        cpu->alu.arg1 = cpu->alu.carry_in ? 0xFFFF : 0x0000;
+                        cpu->alu.arg2 = phri_cpu_rdr(cpu, Rd_idx);
+                        cpu->alu.carry_in = kphri_bit_off;
+                        cpu->alu.shift2 = ((opcode == kphri_alu_op_shl) ? 0b00000000: 0b10000000 ) | 
+                                (((cpu->registers.INSTR & kphri_instr_mask_alu_src1c) >> kphri_instr_mask_alu_src1c_shift) &
+                                    kphri_instr_mask_alu_src1_shdist);
+                        cpu->alu.shift1 = ((opcode == kphri_alu_op_shl) ? 0b10000000: 0b00000000 ) | (16 - 
+                                (((cpu->registers.INSTR & kphri_instr_mask_alu_src1c) >> kphri_instr_mask_alu_src1c_shift) &
+                                    kphri_instr_mask_alu_src1_shdist));
+                        // Carry-out this bit:
+                        postshift_bit_idx = (((cpu->registers.INSTR & kphri_instr_mask_alu_src1c) >> kphri_instr_mask_alu_src1c_shift) & kphri_instr_mask_alu_src1_shCbit) >> kphri_instr_mask_alu_src1_shCbit_shift;
+                        postshift_bitmask = (opcode == kphri_alu_op_shl) ?
+                                                0b1000000000000000 >> postshift_bit_idx :
+                                                0b0000000000000001 << postshift_bit_idx;
+                        set_cond = kphri_bit_on;
                         break;
-                    case kphri_alu_op_shl:
-                        // Carry bit will be selected from this position:
-                        Arg3 = 8 + (((Arg2 & kphri_instr_mask_alu_src1_shCbit) >> kphri_instr_mask_alu_src1_shCbit_shift) ^ 0b111);
-                        // Shift distance from the rest of the 7-bit constant:
-                        Arg2 &= kphri_instr_mask_alu_src1_shdist;
-                        break;
-                    case kphri_alu_op_and:
-                    case kphri_alu_op_or:
-                    case kphri_alu_op_xor:
-                        break;
+                    }
                     default:
-                        // Sign-extend the 7-bit constant to 16-bit:
-                        if ( Arg2 & 0b1000000 ) Arg2 |= 0b1111111110000000;
+                        cpu->alu.arg1 = phri_cpu_rdr(cpu, Rd_idx);
+                        cpu->alu.arg2 = (cpu->registers.INSTR & kphri_instr_mask_alu_src1c) >> kphri_instr_mask_alu_src1c_shift;
+                        // Sign-extend the 7-bit constant to 16-bit for +/-:
+                        if ( ! (op_idx & 0b110) && (cpu->alu.arg2 & 0b1000000) ) cpu->alu.arg2 |= 0b1111111110000000;
                         break;
                 }
             } else {
-                Arg1 = cpu->registers.R[(cpu->registers.INSTR & kphri_instr_mask_alu_src1i) >> 7];
                 if ( cpu->registers.INSTR & kphri_instr_mask_alu_src2t ) {
-                    // 3-bit const, sign-extend or bias if necessary
-                    Arg2 = (cpu->registers.INSTR & kphri_instr_mask_alu_src2c) >> 3;
+                    // 2 register + 3-bit const
                     switch ( opcode ) {
                         case kphri_alu_op_shr:
                         case kphri_alu_op_shl:
+                            cpu->alu.arg1 = cpu->alu.carry_in ? 0xFFFF : 0x0000;
+                            cpu->alu.arg2 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_instr_mask_alu_src1i) >> kphri_instr_mask_alu_src1i_shift);
+                            cpu->alu.carry_in = kphri_bit_off;
                             // The 3-bit constant for SHR/SLH gets incremented by one so the range is [1, 8]:
-                            Arg2++;
-                            break;
-                        case kphri_alu_op_and:
-                        case kphri_alu_op_or:
-                        case kphri_alu_op_xor:
+                            cpu->alu.shift2 = 1 + ((cpu->registers.INSTR & kphri_instr_mask_alu_src2c) >> kphri_instr_mask_alu_src2_shift);
+                            postshift_bitmask = (opcode == kphri_alu_op_shl) ? 0b1000000000000000 : 0b0000000000000001;
+                            set_cond = kphri_bit_on;
                             break;
                         default:
+                            cpu->alu.arg1 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_instr_mask_alu_src1i) >> kphri_instr_mask_alu_src1i_shift), cpu->alu.mask1 = 0xFFFF;
+                            cpu->alu.arg2 = (cpu->registers.INSTR & kphri_instr_mask_alu_src2c) >> kphri_instr_mask_alu_src2_shift;
                             // Sign-extend the 3-bit constant to 16-bit:
-                            if ( Arg2 & 0b100 ) Arg2 |= 0b1111111111111000;
+                            if ( cpu->alu.arg2 & 0b100 ) cpu->alu.arg2 |= 0b1111111111111000;
                             break;
                     }
                 } else {
-                    Arg2 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_instr_mask_alu_src2i) >> 3);
-                    if ( ((cpu->registers.INSTR & kphri_instr_mask_alu_src2i) == 0) &&
-                           (opcode == kphri_alu_op_and || opcode == kphri_alu_op_xor) ) Arg2 = ~Arg2;
+                    phri_byte_t     Rx_idx = (cpu->registers.INSTR & kphri_instr_mask_alu_src1i) >> kphri_instr_mask_alu_src1i_shift;
+                    phri_byte_t     Ry_idx = (cpu->registers.INSTR & kphri_instr_mask_alu_src2i) >> kphri_instr_mask_alu_src2_shift;
+                    
+                    cpu->alu.arg1 = phri_cpu_rdr(cpu, Rx_idx);
+                    cpu->alu.arg2 = phri_cpu_rdr(cpu, Ry_idx) ^ \
+                                        ((!(op_idx & 0b100) || (op_idx & 0b001) || Ry_idx) ? 0x0000 : 0xFFFF);
+                    switch ( opcode ) {
+                        case kphri_alu_op_shr:
+                        case kphri_alu_op_shl:
+                            cpu->alu.carry_in = kphri_bit_off;
+                            postshift_bitmask = (opcode == kphri_alu_op_shl) ? 0b1000000000000000 : 0b0000000000000001;
+                            set_cond = kphri_bit_on;
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
             
-            // Operands have been decoded
-            switch ( opcode ) {
-                case kphri_alu_op_add:
-                    Accum = phri_word_add(
-                                Arg1,
-                                Arg2 + ((set_cond && (cpu->registers.F & kphri_sb_c)) ? 1 : 0),
-                                set_cond ? &cpu->registers.F : NULL,
-                                0);
-                    break;
-                case kphri_alu_op_sub:
-                    Accum = phri_word_add(
-                                Arg1,
-                                ~(Arg2 + ((set_cond && (cpu->registers.F & kphri_sb_c)) ? 1 : 0)) + 1,
-                                set_cond ? &cpu->registers.F : NULL,
-                                1);
-                    break;
-                case kphri_alu_op_shl:
-                    Accum = Arg1 << Arg2;
-                    // If SHCL and the C flag is set, set the shifted-in bits to 1:
-                    if ( set_cond && (cpu->registers.F & kphri_sb_c) ) Accum |= (0b1111111111111111 >> (16 - Arg2));
-                    // Set the C flag to the value of the desired bit index:
-                    if ( Accum & (1 << Arg3) )
-                        cpu->registers.F |= kphri_sb_c;
-                    else
-                        cpu->registers.F &= ~kphri_sb_c;
-                    break;
-                case kphri_alu_op_shr:
-                    Accum = Arg1 >> Arg2;
-                    // If SHCR and the C flag is set, set the shifted-in bits to 1:
-                    if ( set_cond && (cpu->registers.F & kphri_sb_c) ) Accum |= (0b1111111111111111 << (16 - Arg2));
-                    // Set the C flag to the value of the desired bit index:
-                    if ( Accum & (1 << Arg3) )
-                        cpu->registers.F |= kphri_sb_c;
-                    else
-                        cpu->registers.F &= ~kphri_sb_c;
-                    break;
-                case kphri_alu_op_and:
-                    Accum = Arg1 & Arg2;
-                    // If ANDS, copy specific bit-index values from the result to the status register:
-                    if ( set_cond ) cpu->registers.F = ((Accum & 0b1000000000000000) ? kphri_sb_m : 0) |
-                                                       ((Accum & 0b0100000000000000) ? kphri_sb_v : 0) |
-                                                       ((Accum & 0b0000000000000001) ? kphri_sb_c : 0) |
-                                                        (Accum ? 0 : kphri_sb_z);
-                    break;
-                case kphri_alu_op_or:
-                    Accum = Arg1 | Arg2;
-                    // If ORS, copy specific bit-index values from the result to the status register:
-                    if ( set_cond ) cpu->registers.F = ((Accum & 0b1000000000000000) ? kphri_sb_m : 0) |
-                                                       ((Accum & 0b0100000000000000) ? kphri_sb_v : 0) |
-                                                       ((Accum & 0b0000000000000001) ? kphri_sb_c : 0) |
-                                                        (Accum ? 0 : kphri_sb_z);
-                    break;
-                case kphri_alu_op_xor:
-                    Accum = Arg1 ^ Arg2;
-                    // If XORS, copy specific bit-index values from the result to the status register:
-                    if ( set_cond ) cpu->registers.F = ((Accum & 0b1000000000000000) ? kphri_sb_m : 0) |
-                                                       ((Accum & 0b0100000000000000) ? kphri_sb_v : 0) |
-                                                       ((Accum & 0b0000000000000001) ? kphri_sb_c : 0) |
-                                                        (Accum ? 0 : kphri_sb_z);
-                    break;
-                case kphri_alu_op_misc: {
-                    // There is no writeback to any registers for these instructions:
-                    set_dest = 0;
-                    if ( (cpu->registers.INSTR & kphri_alu_op_misc_cmpn_mask) == kphri_alu_op_misc_cmpn ) {
-                        if ( (cpu->registers.INSTR & kphri_alu_op_misc_cmp_mask) == kphri_alu_op_misc_cmn ) {
-                            // CMN is an addition with the result discarded:
-                            phri_word_add(Arg1, Arg2, &cpu->registers.F, 0);
-                        } else {
-                            // CMP is a subtraction with the result discarded:
-                            phri_word_add(Arg1, ~Arg2 + 1, &cpu->registers.F, 1);
-                        }
-                    }
-                    break;
-                }
-            }
-            // Write result to Rd if the instruction calls for that:
-            if ( set_dest ) phri_cpu_wrr(cpu, Rd, Accum);
+            phri_alu_exec(&cpu->alu);
+            phri_cpu_wrr(cpu, Rd_idx, cpu->alu.result);
+            if ( set_cond ) cpu->registers.F = cpu->alu.flags;
+            if ( postshift_bitmask ) cpu->registers.F = (cpu->alu.result & postshift_bitmask) ?
+                                                            cpu->registers.F | kphri_sb_c :
+                                                            cpu->registers.F & ~kphri_sb_c;
         }
     }
     else if ( (cpu->registers.INSTR & kphri_instr_kind_not_alu_mask) == kphri_instr_kind_branch ) {
@@ -236,7 +213,8 @@ phri_cpu_execinstr(
             phri_byte_t     Rx = (cpu->registers.INSTR & kphri_data_op_rx_mask) >> kphri_data_op_rx_shift;
             phri_word_t     is_cond = 1;
             phri_word_t     dRx = 0;            
-            phri_word_t     mask = 0x0000, set=0xFFFF, is_writeback=0;
+            phri_word_t     mask = 0x0000, set=0xFFFF;
+            phri_bit_t      is_mem_read = (!(cpu->registers.INSTR & kphri_data_op_store)) ? kphri_bit_on : kphri_bit_off;
             
             if ( cpu->registers.INSTR & kphri_data_op_autoinc ) {
                 // Auto-increment instruction:
@@ -260,10 +238,10 @@ phri_cpu_execinstr(
                 // 8-bit options
                 if ( cpu->registers.INSTR & kphri_data_op_8b_hi ) {
                     // 8-bit, MSB
-                    mask = 0x00FF, set = 0xFF00, is_writeback = 1;
+                    mask = 0x00FF, set = 0xFF00, is_mem_read = kphri_bit_on;
                 } else {
                     // 8-bit, LSB
-                    mask = 0xFF00, set = 0x00FF, is_writeback = 1;
+                    mask = 0xFF00, set = 0x00FF, is_mem_read = kphri_bit_on;
                 }
             }
             
@@ -272,29 +250,23 @@ phri_cpu_execinstr(
                     // Store
                     // Pre-adjust register value if auto-increment was enabled:
                     cpu->registers.R[Rx] += dRx;
-                    
-                    // Set address offset register:                    
-                    cpu->registers.MOFF = phri_cpu_rdr(cpu, Rx);
-                    
-                    // Set the address pins on the bus:
-                    phri_cpu_bus_setaddr(cpu, false);
-                    
-                    // If we're doing a half-word store, load the existing value
-                    if ( is_writeback ) phri_cpu_bus_rd(cpu);
-                    
+                }
+                // Set address offset register:                    
+                cpu->registers.MOFF = phri_cpu_rdr(cpu, Rx);
+                
+                // Set the address pins on the bus:
+                phri_cpu_bus_setaddr(cpu, false);
+                
+                // Load existing value from memory
+                if ( is_mem_read ) phri_cpu_bus_rd(cpu);
+                
+                if ( cpu->registers.INSTR & kphri_data_op_store ) {
                     // Set the data bus:
                     cpu->bus->data = (cpu->bus->data & mask) | (cpu->registers.R[Rd] & set);
                     
                     // Write the data:
                     phri_cpu_bus_wr(cpu);
                 } else {
-                    // Load
-                    // Set address registers:
-                    cpu->registers.MOFF = cpu->registers.R[Rx];
-                    
-                    // Read the data
-                    phri_cpu_fetchdata(cpu);
-                    
                     // Set register
                     phri_cpu_wrr(cpu, Rd, (cpu->registers.R[Rd] & mask) | (cpu->bus->data & set));
                     
