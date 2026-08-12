@@ -41,7 +41,7 @@ LOCKUP:             BR      LOCKUP              ; Go into an infinite loop
 ONE_OVER_N:         BITS    R1                  ; Set flags from R1 & 0xFFFF
                     B.EQ    L                   ; The input was 0, just return as-is
                     ;
-                    ; Not zero, check for 11:
+                    ; Not zero, check for 1:
                     ;
                     CMP     R1, #1
                     BR.NE   NOT_ONE
