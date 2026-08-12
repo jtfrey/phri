@@ -21,7 +21,7 @@ PI_LOOP:            MOV     R1, R4              ; R1 <= R4 (n)
                     ADD     R3, R3, R1          ; R3 <= R3 + R1 = sum + (1 / (n+2))
                     SRCC                        ; Clear carry
                     ADDS    R4, #4              ; R4 <= R4 + 4
-                    BR.PL   PI_LOOP             ; So long as we are > 32767, go again
+                    BR.PL   PI_LOOP             ; So long as we are < 32767, go again
                     
 LOCKUP:             BR      LOCKUP              ; Go into an infinite loop
 
