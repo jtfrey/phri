@@ -156,13 +156,11 @@ main()
     phri_word_t         last_PC = 0xFFFF;
     unsigned int        i, n = 3;
     int                 sign = -1;
-    FILE                *out = fopen("log.txt", "w");
     
     phri_mem_64k_init(&M);
     memcpy(M.ram, asmbin, sizeof(asmbin));
     phri_bus_init(&B, &C, &M);
-     
-    fprintf(out, "0x4000 ");
+    
     while ( 1 ) {
         // Process an instruction and show the CPU summary:
         phri_cpu_fetchinstr(&C);
@@ -175,16 +173,13 @@ main()
         // Update the saved PC (for infinite loop detection) and do the next pass:
         last_PC = C.registers.PC;
         switch ( last_PC ) {
-            case 0x0024:
-                break;
             case 0x008A:
-                fprintf(out, "%c 0x%04hX ", (sign < 0) ? '-' : '+', C.registers.R[1]);
-                sign *= -1;
                 n += 2;
                 break;
         }
     }
-    fprintf(out, "= 0x%04hX (%f, n = %d)\n", C.registers.R[3], (double)C.registers.R[3] / 16384.0, n);
+    phri_cpu_summary(&C);
+    printf("= 0x%04hX (%f, last term = 1/%u)\n", C.registers.R[3], (double)C.registers.R[3] / 16384.0, n);
     
     printf("Program exited at $%02hhX%04hX\n", C.registers.PSEG, C.registers.PC);
     printf("C estimate fixed = 0x%04hX\n", fixed_estimate_pi_over_4());
