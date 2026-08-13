@@ -6,7 +6,12 @@
 ;
                     .ORG    $0000
                     
-__MAIN:             MVH0    R3, #0x40           ; R3 <= 0x4000 = 1.0
+__MAIN:             MV0L    R7, __STACK@LSB     ; Set SP to our built-in stack
+                    BR      OVER_STACK          ; Skip over the stack
+__STACK_BOTTOM:     DS      16
+
+__STACK_TOP:
+OVER_STACK:         MVH0    R3, #0x40           ; R3 <= 0x4000 = 1.0
                     MV0L    R4, #3              ; R4 <= 0x0003 = n
 
 PI_LOOP:            MOV     R1, R4              ; R1 <= R4 (n)

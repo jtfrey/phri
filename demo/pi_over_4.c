@@ -6,6 +6,10 @@
 
 #include "phri_bus.h"
 phri_word_t     asmbin[] = {
+                    0xD007,
+                    0x10B7,
+                    0x4808,
+                    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
                     0xD003,
                     0x1A03,
                     0xD004,
@@ -150,22 +154,22 @@ float_estimate_pi_over_4(void)
 int
 main()
 {
-    phri_bus_t          B;
-    phri_cpu_t          C = phri_cpu_create();
-    phri_mem_64k_t      M;
-    phri_word_t         last_PC = 0xFFFF;
-    unsigned int        i, n = 3;
-    int                 sign = -1;
+    phri_bus_t              B;
+    phri_cpu_t              C = phri_cpu_create();
+    phri_mem_N_by_4KiB_t    M;
+    phri_word_t             last_PC = 0xFFFF;
+    unsigned int            i, n = 3;
+    int                     sign = -1;
     
-    phri_mem_64k_init(&M);
-    memcpy(M.ram, asmbin, sizeof(asmbin));
+    phri_mem_N_by_4KiB_init_with_bitmap(&M, 0b1000000000000001);
     phri_bus_init(&B, &C, &M);
+    phri_mem_bulk_copyin(&M, 0x0000, asmbin, sizeof(asmbin));
     
     while ( 1 ) {
         // Process an instruction and show the CPU summary:
         phri_cpu_fetchinstr(&C);
         phri_cpu_execinstr(&C);
-        //phri_cpu_summary(&C);
+        phri_cpu_summary(&C);
         
         // Detect an infinite loop (our end condition):
         if ( C.registers.PC == last_PC ) break;
@@ -179,6 +183,7 @@ main()
         }
     }
     phri_cpu_summary(&C);
+    phri_mem_summary(&M, stdout);
     printf("= 0x%04hX (%f, last term = 1/%u)\n", C.registers.R[3], (double)C.registers.R[3] / 16384.0, n);
     
     printf("Program exited at $%02hhX%04hX\n", C.registers.PSEG, C.registers.PC);

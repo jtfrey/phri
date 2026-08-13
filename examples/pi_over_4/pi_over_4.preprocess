@@ -1,4 +1,8 @@
-__MAIN:             MVH0    R3, #0x40
+__MAIN:             MV0L    R7, __STACK_TOP@LSB
+                    BR      OVER_STACK
+__STACK_BOTTOM:     DS      16
+__STACK_TOP:
+OVER_STACK:         MVH0    R3, #0x40
                     MV0L    R4, #3
 PI_LOOP:            MOV     R1, R4
                     BRL     ONE_OVER_N

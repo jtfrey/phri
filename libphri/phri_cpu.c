@@ -123,7 +123,7 @@ phri_cpu_execinstr(
                             set_cond = kphri_bit_on;
                             break;
                         default:
-                            cpu->alu.arg1 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_instr_mask_alu_src1i) >> kphri_instr_mask_alu_src1i_shift), cpu->alu.mask1 = 0xFFFF;
+                            cpu->alu.arg1 = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_instr_mask_alu_src1i) >> kphri_instr_mask_alu_src1i_shift);
                             cpu->alu.arg2 = (cpu->registers.INSTR & kphri_instr_mask_alu_src2c) >> kphri_instr_mask_alu_src2_shift;
                             // Sign-extend the 3-bit constant to 16-bit:
                             if ( cpu->alu.arg2 & 0b100 ) cpu->alu.arg2 |= 0b1111111111111000;
@@ -280,6 +280,7 @@ phri_cpu_execinstr(
             
             if ( cpu->registers.INSTR & kphri_data_op_mov_8b_mask ) {
                 // 8-bit immediate mode
+                dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
                 arg1 = phri_cpu_rdr(cpu, dsti);
                 arg2 = (cpu->registers.INSTR & kphri_data_op_mov_8b_imm8_mask);
                 dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
@@ -301,7 +302,7 @@ phri_cpu_execinstr(
                 // 4-bit immediate mode
                 dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
                 shift2 = (cpu->registers.INSTR & kphri_data_op_mov_4b_shift_mask) >> (kphri_data_op_mov_4b_shift_shift - 2);
-                arg2 = ((cpu->registers.INSTR & kphri_data_op_mov_4b_imm4_mask) >> kphri_data_op_mov_4b_imm4_shift) << shift2;
+                arg2 = ((cpu->registers.INSTR & kphri_data_op_mov_4b_imm4_mask) >> kphri_data_op_mov_4b_imm4_shift);
                 if ( cpu->registers.INSTR & kphri_data_op_mov_4b_zero_mask ) {
                     arg1 = mask1 = 0x0000;
                 } else {
@@ -311,7 +312,7 @@ phri_cpu_execinstr(
             } else if ( cpu->registers.INSTR & kphri_data_op_movn_mask ) {
                 // 4-bit negated immediate mode
                 dsti = (cpu->registers.INSTR & kphri_data_op_mov_dsti);
-                shift2 = (cpu->registers.INSTR & kphri_data_op_mov_4b_shift_mask) >> (kphri_data_op_mov_4b_shift_shift - 2);
+                shift2 = (cpu->registers.INSTR & kphri_data_op_mov_4b_shift_mask) >> kphri_data_op_mov_4b_shift_shift;
                 arg2 = ((cpu->registers.INSTR & kphri_data_op_mov_4b_imm4_mask) >> kphri_data_op_mov_4b_imm4_shift) ^ 0x000F;
                 arg1 = 0xFFFF;
                 mask1 = ~(0x000F << shift2);

@@ -30,15 +30,25 @@ typedef void (*phri_mem_rd_t)(void *M);
 typedef void (*phri_mem_wr_t)(void *M);
 
 /**
+ * Type of a funtion that summarizes a memory system
+ * The stdio \p stream is used to print information about the memory
+ * system, \p M.
+ */
+typedef void (*phri_mem_summary_t)(void *M, FILE *stream);
+
+/**
  * Abstract base structure for system memory
  * Every concrete memory architecture must extend this data structure
  * with its own fields.
  */
 typedef struct {
-    phri_buslink_t      *bus;   /*!< pointer to the shared buslink object */
-    phri_mem_rd_t       rd;     /*!< function to read a word from memory */
-    phri_mem_wr_t       wr;     /*!< function to write a word to memory */
+    phri_buslink_t      *bus;       /*!< pointer to the shared buslink object */
+    phri_mem_rd_t       rd;         /*!< function to read a word from memory */
+    phri_mem_wr_t       wr;         /*!< function to write a word to memory */
+    phri_mem_summary_t  summary;    /*!< function to summarize the memory system */
 } phri_mem_t;
+
+void phri_mem_bulk_copyin(const void *M, phri_addr_t addr, const void *p, size_t plen);
 
 /**
  * Trigger word read from memory
@@ -53,6 +63,13 @@ typedef struct {
  * write function.
  */
 #define phri_mem_wr(_M_) (((phri_mem_t*)(_M_))->wr((_M_)))
+
+/**
+ * Trigger word write to memory
+ * Function-like macro that invokes the phri_mem_t object's
+ * write function.
+ */
+#define phri_mem_summary(_M_, _STRM_) (((phri_mem_t*)(_M_))->summary((_M_), (_STRM_)))
 
 /**
  * 64 KiB system memory object
@@ -70,8 +87,57 @@ typedef struct {
 /**
  * Init 64 KiB system memory object
  * Given a pointer to a phri_mem_64k_t, initialize its read/write
- * function pointers and all over fields.
+ * function pointers and all other fields.
  */
 void phri_mem_64k_init(phri_mem_64k_t *M);
+
+
+/**
+ * A 4 KiB memory array
+ * A set of (8) 4 Kbit chips is used to store 4 Kbytes.
+ */
+typedef struct __attribute__((packed)) {
+    struct {
+        phri_addr_t lo;
+        phri_addr_t hi;
+    } raddr;
+    struct {
+        phri_addr_t lo;
+        phri_addr_t hi;
+    } waddr;
+    phri_bit_t      chip[8][4096];
+} phri_mem_ram4KiB_t;
+
+/**
+ * Memory system with a fixed number of 4 KiB chips
+ * The memory in this object is stored in modules consisting of
+ * 8 x 4 Kbit RAM chips.  Bits 15…12 in the address act as a
+ * select on the chip array to be accessed.
+ */
+typedef struct {
+    phri_mem_t              base;
+    phri_byte_t             N_4KiB;
+    phri_mem_ram4KiB_t*     arrays[16];
+} phri_mem_N_by_4KiB_t;
+
+/**
+ * Init 4KiB chip system memory object, first N
+ * Given a pointer to a phri_mem_N_by_4KiB_t, initialize its read/write
+ * function pointers and all other fields.
+ *
+ * The first \p N_4KiB banks of 4 KiB are mapped into the address space.
+ */
+void phri_mem_N_by_4KiB_init(phri_mem_N_by_4KiB_t *M, unsigned int N_4KiB);
+
+/**
+ * Init 4KiB chip system memory object, arbitrary
+ * Given a pointer to a phri_mem_N_by_4KiB_t, initialize its read/write
+ * function pointers and all other fields.
+ *
+ * The bitmask \p are_mapped indicates which of the 16 x 4 KiB chips are
+ * to be present in the memory space.  The LSb represents the 4 KiB at
+ * $0000, the MSb represents the 4 KiB at $F000.
+ */
+void phri_mem_N_by_4KiB_init_with_bitmap(phri_mem_N_by_4KiB_t *M, phri_word_t are_mapped);
 
 #endif /* __PHRI_MEM_H__ */
