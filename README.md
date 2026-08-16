@@ -25,7 +25,7 @@ Data movement instructions lead with two zeroes, followed by bit 13's indicating
 ```
  F E D C B A 9 8 7 6 5 4 3 2 1 0
  --------------------------------
-|0 0|0|  …0…    …1…   OPERANDS   |  MOV et. al
+|0 0|0|  …0…     …1…  OPERANDS   |  MOV et. al
 |0 0|1|0|   …0…  …1…  OPERANDS   |  LDR et. al
 |0 0|1|1|   …0…  …1…  OPERANDS   |  STO et. al
 ```
@@ -50,7 +50,7 @@ Since the ISA is homogeneous 16-bit instructions, the IMM11 and IMM8 values are 
 
 # First pass issues
 
-After a first pass at the ISA and implementing it, there are a few issues.  First and foremost, there's a lot of instruction overlap.  I went back and reread a book on ARM64 and it dawned on me that the baseline `MOV` instructions in PHRI are redundant:
+After a first pass at the ISA and implementing it, there were a few issues.  First and foremost, there was some instructional overlap.  I went back and reread a book on ARM64 and it dawned on me that the baseline `MOV` instructions in PHRI were redundant:
 
 | MOV form      | Alternative       |                                      |
 | :------------ | :---------------- | :----------------------------------- |
@@ -61,8 +61,18 @@ The instructions working with the PC and DSEG registers were allocated in the mi
 
 The first alteration was to move the special-case instructions first:  for the PC and DSEG instructions, one of the registers is always implied and there are no options so fewer operand bits are needed.  Instructions use from 5 to 6 bits.
 
-The next-largest triad of instructions load a 4-bit immediate value (possibly shifted 0, 4, 8, or 12 bit positions, possibly negated, or with existing bits outside the 4-bit constant retained or zeroed) into a register — sign-extending as appropriate.  The shifts are not arbitrary, they are nibble-aligned:  0, 4, 8, 12, using just 2 bits in the instruction.  That's a 3-bit register index, 4-bit immediate value, 2-bit shift, and a single decode bit: 10 bits.
+I wandered down a complicated restructuring path until lessons from ARM's 32-bit ISA took me a simpler route:  I decided that other than the special-case `MOV` instructions, the main focus of `MOV` is to shift bits out of the instruction word and into a register.  Complexity could be avoided by adopting a single additional instruction format that spanned all remaining bits:
 
-The jump from 6 to 10 bits leaves some room for other instructions in between.  Just above the special-case `MOV` instructions is a byte-swap instruction that flips the low- and high-bytes of a register with the result going into a register.
+```
+FED|C|BA9876543210
+000|1|NKSSSCCCCDDD          MOV[K][N]   Rd, #IMM4, ROR#(2*SSS)
+```
 
-The remaining `MOV` instructions are unchanged.
+The mandatory `000` prefix from the MSb for a `MOV` instruction is followed by a `1` signalling this instruction format.  The `N` bit indicates bitwise-NOT of the value before it is written to the register (`0`=no, `1`=yes).  The `K` bit indicates how the value present in Rd is to be altered by the four new bits (`0`=zero all other bits, `1`=keep all other bits).  The three `SSS` bits provide a right-rotate distance to shift the new bits; with a value of [0…7] the shift is two-times the value of `SSS`.  Moving a nibble into the lowest position of the register requires a `ROR#0`, whereas targetting the next-highest nibble would use `ROR#12`.  The four `CCCC` bits are the nibble to be transferred, and `DDD` is the destination register index.
+
+With two choices for `N` and `K` and 2^3 values for the shift `SSS`, there are effectively 2^5 modes for this `MOV` instruction.  With so few instruction formats, it was straightforward to create a Data Load Unit (DLU) to handle the operation.
+
+
+# Overhaul of ALU
+
+In the course of streamlining the `MOV` instructions I decided the `SHL`/`SHR` bitshift instructions in the ALU were terribly clunky and not very realistic.  Retaining the `1010` and `1011` MSb prefixes, I restructured to increase flexibility, simplify carry-out to only the last-shifted bit (with carry-in for the logical shifts), and added arithmetic shift and a rotate.  The `C` flag that had directed carry-in was available, and when paired with the lowest bit in the `1010`/`1011` MSb prefix, the four operations were selectable — with `0X` being logical shifts and `1X` being arithmetic/rotate.  The `Rd, Rx, #<IMM3>` mode multiplies the immediate value by two (just as for the `MOV` instruction's rotate) — with the exception that a zero shift/rotate is moot having `0` actually equate with a shift of `1`:  `ROR   Rd, Rx, #1` is encoded as `101110XXX1000DDD`, whereas `101110XXX1001DDD` equates with `ROR  Rd, Rx, #2`.

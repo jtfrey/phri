@@ -5,27 +5,25 @@
 
 #include "phri_bus.h"
 phri_word_t     asmbin[] = {
-                    0xD001,
                     0x1051,
-                    0xD002,
-                    0x166A,
+                    0x106A,
+                    0x1762,
                     0x6801,
                     0x4FFF,
                     0x3BB9,
                     0x3BBA,
-                    0xD003,
-                    0xC900,
-                    0x5D01,
-                    0x818B,
-                    0xA0C1,
-                    0xB40A,
-                    0x55FC,
+                    0xD803,
+                    0xAC0A,
+                    0x5D02,
                     0xF40B,
-                    0x9900,
-                    0x59FA,
+                    0x818B,
+                    0xA409,
+                    0xF802,
+                    0xF40B,
+                    0x59F8,
                     0x28BA,
                     0x28B9,
-                    0x0016 };
+                    0x0066 };
 
 int
 main()
@@ -53,5 +51,6 @@ main()
         last_PC = C.registers.PC;
     }
     printf("Program exited at $%02hhX%04hX\n", C.registers.PSEG, C.registers.PC);
+                            
     return 0;
 }

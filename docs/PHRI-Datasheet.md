@@ -69,8 +69,6 @@ It should be noted that there are no explicit no-operation (NOP) instructions pr
 
 | Mnemonic                | Notes
 | :---------------------- | :--------------------------------- |
-| `MOV      R0, Rx`       | R0 as dest = discard value         |
-| `MOV      Rx, Rx`       | Move a register to itself          |
 | `<OPCODE> R0, R0, R0`   | OPCODE = ADD, SUB, AND, OR, XOR    |
 | `SR       AND, #0b1111` | Status bits retain existing values |
 
@@ -79,7 +77,7 @@ It should be noted that there are no explicit no-operation (NOP) instructions pr
 
 All instructions with bit 15 set are handled by the ALU.
 
-This category includes instructions to perform two's-complement addition/subtraction, shift and test bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).
+This category includes instructions to perform two's-complement addition/subtraction, shift and test bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bitwise shift instructions always update the [C]arry register (and no others).
 
 | Mnemonic                                  | Bit pattern        | Description                                       |
 | :---------------------------------------- | :----------------- | :------------------------------------------------ |
@@ -89,50 +87,50 @@ This category includes instructions to perform two's-complement addition/subtrac
 | `SUB{S}    Rd, Rx, Ry`                    | `1001S0XXX0YYYDDD` | Rd <= Rx - Ry, {S}=set status bits            [1] |
 | `SUB{S}    Rd, Rx, #<IMM3>`               | `1001S0XXX1CCCDDD` | Rd <= Rx - IMM3, {S}=set status bits          [1] |
 | `SUB{S}    Rd, #<IMM7>`                   | `1001S1CCCCCCCDDD` | Rd <= Rd - IMM7, {S}=set status bits          [1] |
-| `SH{C}L    Rd, Rx, Ry`                    | `1010C0XXX0YYYDDD` | Rd <= Rx << (Ry&0xF)  {C}=C flag fill       [2,3] |
-| `SH{C}L    Rd, Rx, #<IMM3>`               | `1010C0XXX1cccDDD` | Rd <= Rx << (IMM3+1), {C}=C flag fill       [2,4] |
-| `SH{C}L    Rd, #<IMM4>, #<IMM3>`          | `1010C1BBBccccDDD` | Rd <= Rd << IMM4, {C}=C flag fill           [2,5] |
-| `SH{C}R    Rd, Rx, Ry`                    | `1011C0XXX0YYYDDD` | Rd <= Rx >> (Ry&0xF), {C}=C flag fill       [2,6] |
-| `SH{C}R    Rd, Rx, #<IMM3>`               | `1011C0XXX1cccDDD` | Rd <= Rx >> (IMM3+1), {C}=C flag fill       [2,7] |
-| `SH{C}R    Rd, #<IMM4>, #<IMM3>`          | `1011C1BBBccccDDD` | Rd <= Rd >> IMM4, {C}=C flag fill           [2,8] |
-| `AND{S}    Rd, Rx, Ry`                    | `1100S0XXX0YYYDDD` | Rd <= Rx & Ry, {S}=set status bits         [9,10] |
-| `AND{S}    Rd, Rx, #<IMM3>`               | `1100S0XXX1CCCDDD` | Rd <= Rx & IMM3, {S}=set status bits          [9] |
-| `AND{S}    Rd, #<IMM7>`                   | `1100S1CCCCCCCDDD` | Rd <= Rd & IMM7, {S}=set status bits          [9] |
-| `OR{S}     Rd, Rx, Ry`                    | `1101S0XXX0YYYDDD` | Rd <= Rx | Ry, {S}=set status bits            [9] |
-| `OR{S}     Rd, Rx, #<IMM3>`               | `1101S0XXX1CCCDDD` | Rd <= Rx | IMM3, {S}=set status bits          [9] |
-| `OR{S}     Rd, #<IMM7>`                   | `1101S1CCCCCCCDDD` | Rd <= Rd | IMM7, {S}=set status bits          [9] |
-| `XOR{S}    Rd, Rx, Ry`                    | `1110S0XXX0YYYDDD` | Rd <= Rx ^ Ry, {S}=set status bits         [9,10] |
-| `XOR{S}    Rd, Rx, #<IMM3>`               | `1110S0XXX1CCCDDD` | Rd <= Rx ^ IMM3, {S}=set status bits          [9] |
-| `XOR{S}    Rd, #<IMM7>`                   | `1110S1CCCCCCCDDD` | Rd <= Rd ^ IMM7, {S}=set status bits          [9] |
-| `CMP       Rd, #<IMM7>`                   | `111110CCCCCCCDDD` | Z <= Rd - IMM7, set status bits              [11] |
-| `CMN       Rd, #<IMM7>`                   | `111111CCCCCCCDDD` | Z <= Rd + IMM7, set status bits              [11] |
-| `SR        OP \| #<IMM2>, SYM \| #<IMM4>` | `111101II0000MCVZ` | Alter F using OP and 4-bit constant       [12,13] |
+| `LSL       Rd, Rx, Ry`                    | `101000XXX0YYYDDD` | Rd <= Rx << (Ry & 0xF)                        [2] |
+| `LSR       Rd, Rx, Ry`                    | `101010XXX0YYYDDD` | Rd <= Rx >> (Ry & 0xF)                        [2] |
+| `ASR       Rd, Rx, Ry`                    | `101100XXX0YYYDDD` | Rd <= Rx ASR (Ry & 0xF)                       [2] |
+| `ROR       Rd, Rx, Ry`                    | `101110XXX0YYYDDD` | Rd <= Rx ROR (Ry & 0xF)                       [2] |
+| `LSL       Rd, Rx, #<IMM3>`               | `101000XXX1CCCDDD` | Rd <= Rx << (2 * IMM3)                        [2] |
+| `LSL       Rd, Rx, #1`                    | `101000XXX1000DDD` | Rd <= Rx << 1                               [2,3] |
+| `LSR       Rd, Rx, #<IMM3>`               | `101010XXX1CCCDDD` | Rd <= Rx >> (2 * IMM3)                        [2] |
+| `LSR       Rd, Rx, #1`                    | `101010XXX1000DDD` | Rd <= Rx >> 1                               [2,3] |
+| `ASR       Rd, Rx, #<IMM3>`               | `101100XXX1CCCDDD` | Rd <= Rx ASR (2 * IMM3)                       [2] |
+| `ASR       Rd, Rx, #1`                    | `101100XXX1000DDD` | Rd <= Rx ASR 1                              [2,3] |
+| `ROR       Rd, Rx, #<IMM3>`               | `101110XXX1CCCDDD` | Rd <= Rx ROR (2 * IMM3)                       [2] |
+| `ROR       Rd, Rx, #1`                    | `101110XXX1000DDD` | Rd <= Rx ROR 1                              [2,3] |
+| `LSL       Rd, #<IMM7>`                   | `101001CCCCCCCDDD` | Rd <= Rd << (IMM7 & 0xF)                      [2] |
+| `LSR       Rd, #<IMM7>`                   | `101011CCCCCCCDDD` | Rd <= Rd << (IMM7 & 0xF)                      [2] |
+| `ASR       Rd, #<IMM7>`                   | `101101CCCCCCCDDD` | Rd <= Rd ASR (IMM7 & 0xF)                     [2] |
+| `ROR       Rd, #<IMM7>`                   | `101111CCCCCCCDDD` | Rd <= Rd ROR (IMM7 & 0xF)                     [2] |
+| `AND{S}    Rd, Rx, Ry`                    | `1100S0XXX0YYYDDD` | Rd <= Rx & Ry, {S}=set status bits          [4,5] |
+| `AND{S}    Rd, Rx, #<IMM3>`               | `1100S0XXX1CCCDDD` | Rd <= Rx & IMM3, {S}=set status bits          [4] |
+| `AND{S}    Rd, #<IMM7>`                   | `1100S1CCCCCCCDDD` | Rd <= Rd & IMM7, {S}=set status bits          [4] |
+| `OR{S}     Rd, Rx, Ry`                    | `1101S0XXX0YYYDDD` | Rd <= Rx | Ry, {S}=set status bits            [4] |
+| `OR{S}     Rd, Rx, #<IMM3>`               | `1101S0XXX1CCCDDD` | Rd <= Rx | IMM3, {S}=set status bits          [4] |
+| `OR{S}     Rd, #<IMM7>`                   | `1101S1CCCCCCCDDD` | Rd <= Rd | IMM7, {S}=set status bits          [4] |
+| `XOR{S}    Rd, Rx, Ry`                    | `1110S0XXX0YYYDDD` | Rd <= Rx ^ Ry, {S}=set status bits          [4,5] |
+| `XOR{S}    Rd, Rx, #<IMM3>`               | `1110S0XXX1CCCDDD` | Rd <= Rx ^ IMM3, {S}=set status bits          [4] |
+| `XOR{S}    Rd, #<IMM7>`                   | `1110S1CCCCCCCDDD` | Rd <= Rd ^ IMM7, {S}=set status bits          [4] |
+| `CMP       Rd, #<IMM7>`                   | `111110CCCCCCCDDD` | Z <= Rd - IMM7, set status bits               [6] |
+| `CMN       Rd, #<IMM7>`                   | `111111CCCCCCCDDD` | Z <= Rd + IMM7, set status bits               [6] |
+| `SR        OP \| #<IMM2>, SYM \| #<IMM4>` | `111101II0000MCVZ` | Alter F using OP and 4-bit constant         [7,8] |
 
-**[1]** For `ADDS` and `SUBS`, the value of the [C]arry flag will be added into the sum/difference and modified during execution to reflect carry/borrow.
+**[1]** For `ADD{S}` and `SUB{S}`, the value of the [C]arry flag will be added into the sum/difference.  To prevent unwanted carry-in, the programmer must ensure the [C]arry flag will not be set, either inherently given the program structure or by explicitly clearing it.  The ALU µop is transferred from bits 12…13 (`00`=`ADD`, `01`=`SUB`).
 
-**[2]** For bit shift instructions with a `C` in the mnemonic, the value of the [C]arry flag coming into execution is the bit value shifted into the register.  E.g. if `R1` contains `0b1010101010101010` and [C]arry is set, `SHCL R1, R1, #3` will leave `0b0101010101010111` in `R1`.
+**[2]** The processor's [C]arry flag will be the first bit shifted into the argument by `LSL`/`LSR`; `ASR` will repeatedly shift the MSb and `ROR` will shift the LSb into the MSb.  After these instructions, the carry status flag will hold the last bit to exit the argument.  A shift of zero moves no bits, therefore the carry flag will be clear.  The ALU µop is transferred from bits 11…12 (`00`=`LSL`, `01`=`LSR`, `10`=`ASR`, and `11`=`ROR`).
 
-**[3]** The lowest nibble of the `Ry` register is the number of bit positions to shift (0 through 15).  The next-highest three bits of `Ry` indicate the bit position whose value after the shift should be copied to the [C]arry flag in the status register.  The index is calculated from the three bits as `(8 | ~BBB)`, so the bit pattern `000` is bit 15, and `111` is bit 8.
+**[3]** The 3-bit constant second operand mode multiplies the immediate value by two to get shifts of {0, 2, 4, 6, 8, 12, 14} bit positions.  A zero-distance shift is a no-op, so that 3-bit value instead yields a single-bit shift.  In other words, `LSR Rd, Rx, #0` is not a valid instruction because the bit pattern triggers the CPU to do a `LSR Rd, Rx, #1`.
 
-**[4]** The 3-bit immediate value is biased by one so that the instruction provides for shifts of 1 to 8 bit positions.  The bit at index 15 after the shift is copied to the [C]arry flag in the status register.
+**[4]** For `ANDS`, `ORS`, `XORS`, after the operation the [M]inus, o[V]erflow, and [C]arry flags in the status register are set to reflect the value of bits 15, 14, and 0, respectively.  The [Z]ero flag is set to reflect the value's being zero or not.  The ALU µop is transferred from bits 12…13 (`00`=`AND`, `01`=`OR`, `10`=XOR).
 
-**[5]** The IMM3 value from the instruction is used to compute `(8 | ~IMM3)` as the bit position to copy to the [C]arry flag in the status register.
+**[5]** For `AND` and `XOR` with two source register operands, if `Ry` is `R0` the value of that register is inverted to `0xFFFF`, since that pattern is far more useful in bitwise and/exclusive or operations.
 
-**[6]** The lowest nibble of the `Ry` register is the number of bit positions to shift (0 through 15).  The next-highest three bits of `Ry` indicate the bit position whose value after the shift should be copied to the [C]arry flag in the status register.  The index is the pattern itself, so `000` is bit 0, and `111` is bit 7.
+**[6]** Normally the `ADDS` and `SUBS` instructions with `R0`/`Z` as the destination register suffice for comparisons, but that restricts non-destructive comparison with a 3-bit immediate value.  Explicit 7-bit compare/compare-negated instructions are present to address that deficiency.  The ALU µop is selected from bits 10…11; when bitwise-NOT is applied, the `10` from `CMP` becomes `01` (the µop for subtract) and the `11` from `CMN` becomes `00` (the µop for add).
 
-**[7]** The 3-bit immediate value is biased by one so that the instruction provides for shifts of 1 to 8 bit positions.  The bit at index 0 after the shift is copied to the [C]arry flag in the status register.
+**[7]** The cluster of SR* instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, or XOR (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode.
 
-**[8]** The IMM3 value from the instruction is the bit position to copy to the [C]arry flag in the status register.
-
-**[9]** For `ANDS`, `ORS`, `XORS`, after the operation the [M]inus, o[V]erflow, and [C]arry flags in the status register are set to reflect the value of bits 15, 14, and 0, respectively.  The [Z]ero flag is set to reflect the value's being zero or not.
-
-**[10]** For `AND` and `XOR` with two source register operands, if `Ry` is `R0` the value of that register is inverted to `0xFFFF`, since that pattern is far more useful in bitwise and/exclusive or operations.
-
-**[11]** Normally the `ADDS` and `SUBS` instructions with `R0`/`Z` as the destination register suffice for comparisons, but that restricts non-destructive comparison with a 3-bit immediate value.  Explicit 7-bit compare/compare-negated instructions are present to address that deficiency.
-
-**[12]** The cluster of SR* instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, XOR, or SET (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode.
-
-**[13]** The constant bit pattern can be specified SYMbolically, using the four status bit symbols MCVZ in uppercase symbol for a `1` or lowercase `0`; omission of a symbol implies `0`.  A 4-bit numerical constant is permissible (though the programmer must ensure the correct ordering of the status bits).  E.g. the symbolic form `MZvc` equates with the numerical constant `0b1001` or `0x9` as well as the symbolic form `MZ`.
+**[8]** The constant bit pattern can be specified SYMbolically, using the four status bit symbols MCVZ in uppercase symbol for a `1` or lowercase `0`; omission of a symbol implies `0`.  A 4-bit numerical constant is permissible (though the programmer must ensure the correct ordering of the status bits).  E.g. the symbolic form `MZvc` equates with the numerical constant `0b1001` or `0x9` as well as the symbolic form `MZ`.
 
 
 #### Pseudo-instructions
@@ -141,20 +139,29 @@ While there are no explicit `CMP` or `CMN` modes for multiple registers or short
 
 | Mnemonic           | Actual code                  | Description                                                    |
 | :----------------- | :--------------------------- | :------------------------------------------------------------- |
-| `CMP  Rx, Ry`      | `SRCC; SUBS R0, Rx, Ry`      | Subtract Ry from Rx, set flags, discard result                 |
-| `CMP  Rx, #<IMM3>` | `SRCC; SUBS R0, Rx, #<IMM3>` | Subtract the 3-bit constant from Rx, set flags, discard result |
-| `CMN  Rx, Ry`      | `SRCC; ADDS R0, Rx, Ry`      | Add Ry to Rx, set flags, discard result                        |
-| `CMN  Rx, #<IMM3>` | `SRCC; ADDS R0, Rx, #<IMM3>` | Add the 3-bit constant to Rx, set flags, discard result        |
+| `CMP  Rx, Ry`      | `SRCC`                       | Subtract Ry from Rx, set flags, discard result                 |
+|                    | `SUBS R0, Rx, Ry`            |                                                                |
+| `CMP  Rx, #<IMM3>` | `SRCC`                       | Subtract the 3-bit constant from Rx, set flags, discard result |
+|                    | `SUBS R0, Rx, #<IMM3>`       |                                                                |
+| `CMN  Rx, Ry`      | `SRCC`                       | Add Ry to Rx, set flags, discard result                        |
+|                    | `ADDS R0, Rx, Ry`            |                                                                |
+| `CMN  Rx, #<IMM3>` | `SRCC`                       | Add the 3-bit constant to Rx, set flags, discard result        |
+|                    | `ADDS R0, Rx, #<IMM3>`       |                                                                |
 
-Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an ANDS that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by ANDS, the `SHR` and `SHL` instructions can be used with a shift of zero and a bit index.
+Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an `ANDS` that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by `ANDS`, `ROR` instructions can be used to test bit 1 and all even-indexed bits.
 
-| Mnemonic           | Actual code                | Description                                                    |
-| :----------------- | :------------------------- | :------------------------------------------------------------- |
-| `NOT  Rd, Rx`      | `XOR Rd, Rx, R0`           | When Ry=R0, R0 is flipped to `0xFFFF` and Rd <= Rx ^ 0xFFFF    |
-| `NOTS Rd, Rx`      | `XORS Rd, Rx, R0`          | Same as `NOT` but status bits are set from the result          |
-| `BITS Rx`          | `ANDS R0, Rx, R0`          | When Ry=R0, R0 is flipped to `0xFFFF` and status bits are set  |
-|                    |                            | from the result of (Rx & 0xFFFF), which is discarded           |
-| `BIT  Rx, #<IMM4>` | `SH[R\|L] Rx, #0, #<IMM3>` | `SHR` if 0 <= IMM4 < 8; `SHL` 8 <= IMM4 <= 15                  |
+| Mnemonic             | Actual code                | Description                                                    |
+| :------------------- | :------------------------- | :------------------------------------------------------------- |
+| `NOT  Rd, Rx`        | `XOR Rd, Rx, R0`           | When Ry=R0, R0 is flipped to `0xFFFF` and Rd <= Rx ^ 0xFFFF    |
+| `NOTS Rd, Rx`        | `XORS Rd, Rx, R0`          | Same as `NOT` but status bits are set from the result          |
+| `BITS Rx`            | `ANDS R0, Rx, R0`          | When Ry=R0, R0 is flipped to `0xFFFF` and status bits are set  |
+|                      |                            | from the discarded result (Rx & 0xFFFF)                        |
+|                      |                            | ([M]=bit 15, [V]=bit 14, [C]=bit 0)                            |
+| `BITC Rx, #1`        | `ROR R0, Rx, #1`           | [C]arry will be set to bit 1 of Rx.                            |
+| `BITC Rx, #(N=2i)`   | `ROR R0, Rx, #N`           | [C]arry will be set to the given even-index bit of Rx.         |
+| `BITM Rx, #(N=2i+3)` | `ROR Rx, #(N+1)`           | [M]inus will be set to the given odd-index bit of Rx.          |
+|                      | `ANDS R0, Rx, R0`          | There is no way to shift an odd number of indices (other than  |
+|                      | `ROR Rx, #(15-N)`          | 1) and `ROR` clobbers [C]arry, so this  |
 
 Shortcut mnemonics for alterations to the status register are also provided:
 
@@ -177,33 +184,31 @@ Data movement encompasses instructions that move bits into registers; move bits 
 
 #### Inter-register
 
-Introducing values into registers is a fundamental behavior of a processor.  The ISA includes instructions that transfer values from one register to another — including the `MSEG` and `PC` registers — as well as instructions with embedded 8-bit constants to set the LSB or MSB of a register.
+Introducing values into registers is a fundamental behavior of a processor.  The ISA includes instructions that transfer values from general-purpose registers to special-purpose registers — the `SSR` and `PC` registers — as well as instructions with embedded constants and bit-shift schemes.
 
-| Mnemonic                               | Bit pattern        | Description                            |
-| :------------------------------------- | :----------------- | :------------------------------------- |
-| `MOV       PC, Rx`                     | `0000000000010XXX` | PC <= Rx                               |
-| `MOV       Rd, PC`                     | `0000000000011DDD` | Rd <= PC                               |
-| `MOV       DSEG, Rx`                   | `0000000000100XXX` | DSEG <= Rx & 0xF                       |
-| `MOV       Rd, DSEG`                   | `0000000000101DDD` | Rd <= DSEG                             |
-| `MOV       DSEG, #<IMM4>`              | `000000000011CCCC` | DSEG <= IMM4                           |
-| `BSWP      Rd, Rx`                     | `0000000001XXXDDD` | Rd <= (Rx << 8) \| (Rx >> 8)           |
-| `MOVN      Rd, #<IMM4>, LSL[0,4,8,12]` | `0000001SSCCCCDDD` | Rd <= (IMM4 << (SS\*4)) and sign-      |
-|                                        |                    | extended to fill all 16-bits of Rd     |
-| `MOV       Rd, #<IMM4>, LSL[0,4,8,12]` | `0000010SSCCCCDDD` | Rd <= <…\|IMM4\|…>, where IMM4 is      |
-|                                        |                    | inserted at the bit index indicated by |
-|                                        |                    | (SS\*4); all other bits in Rd are      |
-|                                        |                    | are preserved                          |
-| `MOVZ      Rd, #<IMM4>, LSL[0,4,8,12]` | `0000011SSCCCCDDD` | Rd <= <…\|IMM4\|…>, where IMM4 is      |
-|                                        |                    | inserted at the bit index indicated by |
-|                                        |                    | (SS\*4); all other bits in Rd are zero |
-| `MOV       Rd, Rx, LSL[0…15]`          | `000010SSSSXXXDDD` | Rd <= Rx << IMM4                       |
-| `MOV       Rd, Rx, LSR[0…15]`          | `000011SSSSXXXDDD` | Rd <= Rx >> IMM4                       |
-| `MOVL      Rd, #<IMM8>`                | `00010CCCCCCCCDDD` | Rd <= (Rd & 0xFF00) | IMM8             |
-| `MOVH      Rd, #<IMM8>`                | `00011CCCCCCCCDDD` | Rd <= (Rd & 0x00FF) | (IMM8 << 8)      |
+| Mnemonic                                | Bit pattern        | Description                                |
+| :-------------------------------------- | :----------------- | :----------------------------------------- |
+| `MOV          Rd, <SSR|PC>`             | `000000000100RDDD` | Rx <= SSR|PC                           [1] |
+| `MOV          <SSR|PC>, Rx`             | `000000000110RXXX` | SSR|PC <= Rx                         [1,2] |
+| `MOV          <SSR>, <#IMM4>`           | `000000000111CCCC` | SSR <= IMM4                            [3] |
+| `MOV{K|Z}{N}  Rd, #<IMM4>, #(2*SSS)`    | `0001NKSSSCCCCDDD` | Rd <= const                            [4] |
+| `  MOVZ       Rd, #<IMM4>, #(2*SSS)`    | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
+| `  MOVZN      Rd, #<IMM4>, #(2*SSS)`    | `000110SSSCCCCDDD` | Rd <= ~(IMM4 ROR {0,2,4,6,8,10,12,14})     |
+| `  MOVK       Rd, #<IMM4>, #(2*SSS)`    | `000101SSSCCCCDDD` | `MOVZ` but with untouched Rd bits retained |
+| `  MOVKN      Rd, #<IMM4>, #(2*SSS)`    | `000111SSSCCCCDDD` | `MOVZN` but with untouched Rd bits         |
+|                                         |                    | retained prior to bitwise not              |
+
+**[1]** The `R` bit determines which special-purpose register is the destination/source of the instruction:  `0` for the program counter (PC) and `1` for the status and segment register (SSR).
+
+**[2]** The value in the Rx register overwrites all *except* the PSEG component and unused status bits of the SSR.  This allows for the F (status) register to be restored after being pushed to a stack, for example.  Likewise, when working with data in a different memory segment a subroutine could `MOV M, SSR` then switch segments with `MOV SSR, #4`.  Subsequently, when the subroutine performs cleanup prior to returning to the caller it can restore whatever segment and flags existed using `MOV SSR, M`.
+
+**[3]** Only the lowest four bits of the SSR (the DSEG) can be modified, hence the IMM4 operand.  For the `MOV SSR, Rx` instruction only the lowest four bits of Rx are copied to SSR.
+
+**[4]** The `N` bit, when set, applies a bitwise NOT to the value before writing to Rd.  The `K` bit, when set, introduces the value of Rd into the data load unit and preserves all bit positions outside of the 4-bit constant that is introduced; when clear, zero is loaded into the data load unit for the operation.  The 4-bit constant, IMM4, is effectively repositioned using a ROR shift of two-times the 3-bit shift constant:  so `SSS=111` equates with a shift of 14 bits, for example.
 
 ##### Pseudo-instructions
 
-A basic register-to-register move is implemented using the `OR` and negate register move with `XOR`:
+The list above does not include an instruction to move one register's value to another; basic register-to-register movement is implemented using `OR` and `XOR`:
 
 | Mnemonic      | Actual code       | Description                              |
 | :------------ | :---------------- | :--------------------------------------- |
@@ -211,23 +216,49 @@ A basic register-to-register move is implemented using the `OR` and negate regis
 | `MVN  Rd, Rx` | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
 | `MV0  Rd`     | `OR   Rd, R0, R0` | Rd <= R0 | R0 = 0x0000 | 0x0000 = 0x0000 |
 
-The 8-bit immediate mode on `MOV` always preserves the opposite byte in the register, so pseudo-instructions that include zeroing the destination register are helpful:
+Moving a 16-bit word into a register can be accomplished using up to 4 instructions:
 
-| Mnemonic           | Actual code                | Description                              |
-| :----------------- | :------------------------- | :--------------------------------------- |
-| `MV0L Rd, #<IMM8>` | `MV0 Rd; MOVL Rd, #<IMM8>` | Rd <= 0x0000 | (IMM8)                    |
-| `MVH0 Rd, #<IMM8>` | `MV0 Rd; MOVH Rd, #<IMM8>` | Rd <= 0x0000 | (IMM8 << 8)               |
+| Mnemonic                | Actual code                      | Description                              |
+| :---------------------- | :------------------------------- | :--------------------------------------- |
+| `MOV.W    Rd, #<IMM16>` | `MOVZ   Rd, #<IMM16>@0N, ROR#0`  | Move each nibble of the 16-bit word into |
+|                         | `MOVK   Rd, #<IMM16>@1N, ROR#12` | Rd in sequence.                          |
+|                         | `MOVK   Rd, #<IMM16>@2N, ROR#8`  |                                          |
+|                         | `MOVK   Rd, #<IMM16>@3N, ROR#4`  |                                          |
 
-Setting a register to a memory address or label happens with great frequency; a pseudo-instruction is included to improve code readability.
+In some cases the 16-bit value does not require all four steps:  if `IMM16 = 0b0000000000101100` then the longest sequence is 4 bits at an even bit index (2), so a single instruction is permissible:  `MOVZ  Rd, #0b1011, ROR#14`.  A constant like `0xFD93 = 0b1111110110010011` spans 16 bits, so all four instructions of `MOV.W` are necessary, right?  If we bitwise NOT that constant, we get `0x026C = 0b0000001001101100`, which spans 8 bits:
 
-| Mnemonic               | Actual code                              | Description              |
-| :--------------------- | :--------------------------------------- | :----------------------- |
-| `ADR      Rd, <LABEL>` | `MOVL Rd, LABEL.LSB; MOVH Rd, LABEL.MSB` | Rd <= address of label   |
-| `ADR      Rd, $SHHLL`  | `MOVL Rd, #$LL; MOVH Rd, #$HH`           | Rd <= `$HHLL`            |
-| `ADRS     <LABEL>`     | `MOV DSEG, (LABEL & #0xF0000) >> #16`    | DSEG <= segment of label |
-| `ADRS     Rd, $SHHLL`  | `MOV DSEG, (LABEL & #$SHHLL) >> #16`     | DSEG <= segment of addr  |
+```
+0x13DD|0b0001001111011101   MOVZ      R5, #0b1011, ROR#14     R5 <= 0b0000000000101100
+0x1ECD|0b0001111011001101   MOVKN     R5, #0b1001, ROR#10     R5 <= ~(0b0000001001101100) = 0b1111110110010011
 
-With `R6` being the traditional register used for linking (see the section on Branching instructions), a bare return from a subroutine pseudo-instruction is possible (as is one with a register specified):
+0b1111110110010011 = 0xFD93 ✓
+```
+
+A 16-bit value can be loaded using two 4-bit constants.  Many negative constants can be loaded in fewer instructions through creative application of the bitwise-NOT and bit shift, e.g. `MOVZN  Rd, #0b0001, ROR#0` would load Rd with `0xFFFE` or `-2`.  Loading 12- or 8-bit constants behave in similar fashion, but the two special cases of replacing the high- or low-byte of a register are included:
+
+| Mnemonic                | Actual code                      | Description                              |
+| :---------------------- | :------------------------------- | :--------------------------------------- |
+| `MOV.L    Rd, #<IMM8>`  | `MOVK   Rd, #<IMM8>@0N, ROR#0`   | Move each nibble of the 8-bit byte into  |
+|                         | `MOVK   Rd, #<IMM8>@1N, ROR#12`  | into the low-byte of Rd in sequence.     |
+| `MOV.H    Rd, #<IMM8>`  | `MOVK   Rd, #<IMM8>@0N, ROR#8`   | Move each nibble of the 8-bit byte into  |
+|                         | `MOVK   Rd, #<IMM8>@1N, ROR#4`   | into the high-byte of Rd in sequence.    |
+
+It may be more natural for the programmer to think of the bit shifts in terms of an LSL; the assembler can accept `LSL#<shift>` syntax and reinterpret it as `ROR#(16 - <shift>)`.
+
+Loading addresses into a register, either from an immediate value or from a label, is given its own pseudo-instructions:
+
+| Mnemonic                 | Actual code                       | Description                      |
+| :----------------------- | :-------------------------------- | :------------------------------- |
+| `ADR      Rd, <LABEL>`   | `MOV.L   Rd, #LABEL@0B`           | Rd <= <LABEL>                    |
+|                          | `MOV.H   Rd, #LABEL@1B`           |                                  |
+| `ADR      Rd, ${S}HHLL`  | `MOV.L   Rd, #$LL`                | Rd <= $HHLL                      |
+|                          | `MOV.H   Rd, #$HH`                |                                  |
+| `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, #LABEL@4N, ROR#0`    | Rd <= <LABEL>.SEGMENT            |
+| `ADRS     Rd, ${S}HHLL`  | `MOVZ    Rd, #${S:0}, ROR#0`      | Rd <= ${S:0}                     |
+|                          | `MOV.H   Rd, #$HH`                |                                  |
+| `ADRS     DSEG, <LABEL>` | `MOV     SSR, LABEL@4N`           | SSR <= 0x0000 \| <LABEL>.SEGMENT |
+
+Finally, with `R6` as the conventional register used for linking (see the section on Branching instructions), a bare return from a subroutine pseudo-instruction is possible (as is one with a register specified):
 
 | Mnemonic               | Actual code                    | Description            |
 | :--------------------- | :----------------------------- | :--------------------- |
