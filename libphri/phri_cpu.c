@@ -56,6 +56,8 @@ phri_cpu_execinstr(
                     } else {
                         cpu->alu.arg2 = ( !cpu->alu.arg2 && ((uop == kphri_alu_op_and) || (uop == kphri_alu_op_xor))) ? 0xFFFF : 0x0000;
                     }
+                } else if ( cpu->alu.path == kphri_alu_path_bitshift ) {
+                    if ( cpu->alu.arg2 == 0 ) cpu->alu.arg2 = 1;
                 }
             }
             cpu->alu.carry_in = (cpu->registers.F & kphri_sb_c) ? kphri_bit_on : kphri_bit_off;

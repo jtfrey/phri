@@ -192,7 +192,7 @@ Introducing values into registers is a fundamental behavior of a processor.  The
 | `MOV          <SSR|PC>, Rx`             | `000000000110RXXX` | SSR|PC <= Rx                         [1,2] |
 | `MOV          <SSR>, <#IMM4>`           | `000000000111CCCC` | SSR <= IMM4                            [3] |
 | `MOV{K|Z}{N}  Rd, #<IMM4>, #(2*SSS)`    | `0001NKSSSCCCCDDD` | Rd <= const                            [4] |
-| `  MOVZ       Rd, #<IMM4>, #(2*SSS)`    | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
+| `  MOV{Z}     Rd, #<IMM4>, #(2*SSS)`    | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
 | `  MOVZN      Rd, #<IMM4>, #(2*SSS)`    | `000110SSSCCCCDDD` | Rd <= ~(IMM4 ROR {0,2,4,6,8,10,12,14})     |
 | `  MOVK       Rd, #<IMM4>, #(2*SSS)`    | `000101SSSCCCCDDD` | `MOVZ` but with untouched Rd bits retained |
 | `  MOVKN      Rd, #<IMM4>, #(2*SSS)`    | `000111SSSCCCCDDD` | `MOVZN` but with untouched Rd bits         |

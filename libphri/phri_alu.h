@@ -129,12 +129,13 @@ phri_alu_exec(
 #define OVERFLOW_CHECK1 (overflow = carry_out ? kphri_bit_on : kphri_bit_off)
 #define MINUS_CHECK     (minus = bit ? kphri_bit_on : kphri_bit_off)
 #define OVERFLOW_CHECK2 (overflow = overflow ^ (carry_out ? kphri_bit_on : kphri_bit_off))
-            phri_word_t bitmask = 0b0000000000000001, carry_out,
-                        A_xor_B, bit;
-                        
+            phri_word_t bitmask = 0b0000000000000001, A_xor_B, bit;
+            phri_bit_t  inverted = alu->uop;    /* add = 0b0, sub=0b1 */
+            uint32_t    carry_out;
+            
             zero = kphri_bit_on;
             carry_out = carry;
-            if ( alu->uop & kphri_alu_uop_arith_sub ) arg2 = ~arg2, carry_out ^= kphri_bit_on;
+            if ( inverted ) arg2 = ~arg2, carry_out ^= kphri_bit_on;
             /*  0 */ A_XOR_B, SUM, ZERO_CHECK, CARRY_OUT;
             /*  1 */ A_XOR_B, SUM, ZERO_CHECK, CARRY_OUT;
             /*  2 */ A_XOR_B, SUM, ZERO_CHECK, CARRY_OUT;
@@ -151,7 +152,7 @@ phri_alu_exec(
             /* 13 */ A_XOR_B, SUM, ZERO_CHECK, CARRY_OUT;
             /* 14 */ A_XOR_B, SUM, ZERO_CHECK, CARRY_OUT, OVERFLOW_CHECK1;
             /* 15 */ A_XOR_B, SUM, ZERO_CHECK, CARRY_OUT, MINUS_CHECK, OVERFLOW_CHECK2;
-            carry = carry_out ? kphri_bit_on : kphri_bit_off;
+            carry = (carry_out ? kphri_bit_on : kphri_bit_off) ^ inverted;
 #undef OVERFLOW_CHECK2
 #undef MINUS_CHECK
 #undef OVERFLOW_CHECK1
