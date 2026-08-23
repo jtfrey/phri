@@ -30,7 +30,7 @@ The final register `F` is an 8-bit set of condition (status) flags.  Only four b
 
 - `M`: the minus flag, set to indicate a value has bit 15 set
 - `C`: the carry flag, set to indicate an arithmetic operation produced a carry out of bit 15
-    - this flag is also used to indicate the bit value to shift into a register on bit shift operations
+    - this flag is also used to indicate the bit value to initially shift into a register on bit shift operations (`LSL`, `LSR`)
     - this flag is also set to indicate the captured bit index value on bit shift operations
 - `V`: the overflow flag, set to indicate a signed arithmetic operation produced a carry out of bit 14
 - `Z`: the zero flag, set to indicate a value was zero, clear if non-zero
