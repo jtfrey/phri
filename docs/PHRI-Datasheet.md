@@ -128,7 +128,7 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 **[6]** Normally the `ADDS` and `SUBS` instructions with `R0`/`Z` as the destination register suffice for comparisons, but that restricts non-destructive comparison with a 3-bit immediate value.  Explicit 7-bit compare/compare-negated instructions are present to address that deficiency.  The ALU µop is selected from bits 10…11; when bitwise-NOT is applied, the `10` from `CMP` becomes `01` (the µop for subtract) and the `11` from `CMN` becomes `00` (the µop for add).
 
-**[7]** The cluster of SR* instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, or XOR (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode.
+**[7]** The cluster of SR* instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, or XOR (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode (`AND`=`00`, `OR`=`01`, `XOR`=`10`).
 
 **[8]** The constant bit pattern can be specified SYMbolically, using the four status bit symbols MCVZ in uppercase symbol for a `1` or lowercase `0`; omission of a symbol implies `0`.  A 4-bit numerical constant is permissible (though the programmer must ensure the correct ordering of the status bits).  E.g. the symbolic form `MZvc` equates with the numerical constant `0b1001` or `0x9` as well as the symbolic form `MZ`.
 
@@ -340,10 +340,10 @@ if ( x % 2 ) {
 }
 ```
 
-Since `x` is even, the conditional fails and the increment must be skipped by branching past it.  Calling a subroutine is slightly more complicated:  the `PC` must be saved before it is modified, so that the subroutine can restore that saved value to continue program execution in the calling context.  In the PHRI ISA, saving the `PC` before altering it is known as `linking`, and can be enabled on any of the branch instructions.  The value of the `PC` is transferred to one of the general purpose registers.  For the 12-bit constant offset modes, the `R6`/`L` is implied, while the other modes allow an arbitrary general purpose register to be chosen:
+Since `x` is even, the conditional fails and the increment must be skipped by branching past it.  Calling a subroutine is slightly more complicated:  the `PC` must be saved before it is modified, so that the subroutine can restore that saved value to continue program execution in the calling context.  In the PHRI ISA, saving the `PC` before altering it is known as *linking*, and can be enabled on any of the branch instructions.  The value of the `PC` is transferred to one of the general purpose registers.  For the 12-bit constant offset modes, the `R6`/`L` is implied, while the other modes allow an arbitrary general purpose register to be chosen:
 
 ```
-            MV0L        A, #18          ; Set A to 0x0012
+            MOV.L       A, #18          ; Set A to 0x0012
             BRL         two_a_plus_one  ; copy the PC to R6/L, then offset the PC to reach subroutine two_a_plus_one
               :
             

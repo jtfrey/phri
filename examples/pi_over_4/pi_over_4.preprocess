@@ -1,20 +1,20 @@
-__MAIN:             MV0L    R7, __STACK_TOP@LSB
+__MAIN:             MOV.L   R7, __STACK@LSB
                     BR      OVER_STACK
-__STACK_BOTTOM:     DS      16
-__STACK_TOP:
-OVER_STACK:         MVH0    R3, #0x40
-                    MV0L    R4, #3
+__STACK:            DS      16
+OVER_STACK:         MOV.H   R3, #0x40
+                    MOV.L   R4, #3
 PI_LOOP:            MOV     R1, R4
                     BRL     ONE_OVER_N
                     ORS     R0, R1, R0
                     BR.EQ   LOCKUP
+                    SRCC
                     SUB     R3, R3, R1
                     ADD     R1, R4, #2
                     BRL     ONE_OVER_N
                     ORS     R0, R1, R0
                     BR.EQ   LOCKUP
-                    ADD     R3, R3, R1
                     SRCC
+                    ADD     R3, R3, R1
                     ADDS    R4, #4
                     BR.PL   PI_LOOP
 LOCKUP:             BR      LOCKUP
@@ -22,14 +22,15 @@ ONE_OVER_N:         BITS    R1
                     B.EQ    L
                     CMP     R1, #1
                     BR.NE   NOT_ONE
-RETURN_ONE:         MV0H    R1, #0x40
+RETURN_ONE:         MOV.H   R1, #0x40
                     RET
 NOT_ONE:            PUSH    R2, R3, R4, R5
                     MV0     R3
-                    MV0L    R2, #2
+                    MOV.L   R2, #2
                     MV0     R4
-                    MV0L    R5, #14
-DIV_LOOP:           SHL     R4, R4, #1
+                    MOV.L   R5, #14
+DIV_LOOP:           SRCC
+                    LSL     R4, R4, #1
                     CMP     R3, R0
                     BR.NE   ADJUST_REMAINDER
                     CMP     R2, R1
@@ -41,15 +42,15 @@ ADJUST_REMAINDER:   SRCC
 NEXT_ITERATION:     SRCC
                     SUBS    R5, R5, #1
                     BR.EQ   EXIT_LOOP
-                    BIT     R2, #15
-                    SHCL    R3, R3, #1
-                    SHL     R2, R2, #1
+                    SRCC
+                    LSL     R2, R2, #1
+                    LSL     R3, R3, #1
                     BR      DIV_LOOP
 EXIT_LOOP:          CMP     R3, R0
                     BR.NE   ROUND_UP
-                    BIT     R2, #15
-                    SHCL    R3, R3, #1
-                    SHL     R2, R2, #1
+                    SRCC
+                    LSL     R2, R2, #1
+                    LSL     R3, R3, #1
                     CMP     R2, R1
                     BR.CS   EXIT_FN
 ROUND_UP:           ADD     R4, #1
