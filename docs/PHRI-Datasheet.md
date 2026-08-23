@@ -77,7 +77,7 @@ It should be noted that there are no explicit no-operation (NOP) instructions pr
 
 All instructions with bit 15 set are handled by the ALU.
 
-This category includes instructions to perform two's-complement addition/subtraction, shift and test bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bitwise shift instructions always update the [C]arry register (and no others).
+This category includes instructions to perform two's-complement addition/subtraction, shift and rotate bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bitwise shift instructions always update the [C]arry register (and no others).
 
 | Mnemonic                                  | Bit pattern        | Description                                       |
 | :---------------------------------------- | :----------------- | :------------------------------------------------ |
