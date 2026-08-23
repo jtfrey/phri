@@ -77,7 +77,7 @@ It should be noted that there are no explicit no-operation (NOP) instructions pr
 
 All instructions with bit 15 set are handled by the ALU.
 
-This category includes instructions to perform two's-complement addition/subtraction, shift and rotate bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bitwise shift instructions always update the [C]arry register (and no others).
+This category includes instructions to perform two's-complement addition/subtraction, shift and rotate bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bit shift/rotate instructions always update the [C]arry register (and no others).
 
 | Mnemonic                                  | Bit pattern        | Description                                       |
 | :---------------------------------------- | :----------------- | :------------------------------------------------ |
@@ -118,7 +118,7 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 **[1]** For `ADD{S}` and `SUB{S}`, the value of the [C]arry flag will be added into the sum/difference.  To prevent unwanted carry-in, the programmer must ensure the [C]arry flag will not be set, either inherently given the program structure or by explicitly clearing it.  The ALU µop is transferred from bits 12…13 (`00`=`ADD`, `01`=`SUB`).
 
-**[2]** The processor's [C]arry flag will be the first bit shifted into the argument by `LSL`/`LSR`; `ASR` will repeatedly shift the MSb and `ROR` will shift the LSb into the MSb.  After these instructions, the carry status flag will hold the last bit to exit the argument.  A shift of zero moves no bits, therefore the carry flag will be clear.  The ALU µop is transferred from bits 11…12 (`00`=`LSL`, `01`=`LSR`, `10`=`ASR`, and `11`=`ROR`).
+**[2]** The processor's [C]arry flag will be the first bit shifted into the argument by `LSL`/`LSR`; `ASR` will repeatedly shift the MSb and `ROR` will shift the LSb into the MSb.  After these instructions, the [C]arry status flag will hold the last bit to be moved.  A shift of zero moves no bits, therefore the carry flag will be clear.  The ALU µop is transferred from bits 11…12 (`00`=`LSL`, `01`=`LSR`, `10`=`ASR`, and `11`=`ROR`).
 
 **[3]** The 3-bit constant second operand mode multiplies the immediate value by two to get shifts of {0, 2, 4, 6, 8, 12, 14} bit positions.  A zero-distance shift is a no-op, so that 3-bit value instead yields a single-bit shift.  In other words, `LSR Rd, Rx, #0` is not a valid instruction because the bit pattern triggers the CPU to do a `LSR Rd, Rx, #1`.
 
