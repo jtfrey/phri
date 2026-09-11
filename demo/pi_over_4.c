@@ -32,14 +32,14 @@ phri_word_t     asmbin[] = {
                     0x818B,
                     0x8C24,
                     0x5FF2,
-                    0x4FFF,
+                    0xF680,
                     0xC880,
                     0x5006,
                     0xF40B,
                     0x98C8,
                     0x5902,
                     0x1121,
-                    0x0066,
+                    0x4006,
                     0x3BBA,
                     0x3BBB,
                     0x3BBC,
@@ -82,7 +82,7 @@ phri_word_t     asmbin[] = {
                     0x28BC,
                     0x28BB,
                     0x28BA,
-                    0x0066 };
+                    0x4006 };
 
 phri_word_t
 one_over_n(
@@ -171,18 +171,21 @@ main()
     while ( 1 ) {
         // Process an instruction and show the CPU summary:
         phri_cpu_fetchinstr(&C);
-        phri_cpu_execinstr(&C);
-        phri_cpu_summary(&C);
-        
-        // Detect an infinite loop (our end condition):
-        if ( C.registers.PC == last_PC ) break;
-        
-        // Update the saved PC (for infinite loop detection) and do the next pass:
-        last_PC = C.registers.PC;
-        switch ( last_PC ) {
-            case 0x008A:
-                n += 2;
-                break;
+        if ( phri_cpu_execinstr(&C) ) {
+            phri_cpu_summary(&C);
+            
+            // Detect an infinite loop (our end condition):
+            if ( C.registers.PC == last_PC ) break;
+            
+            // Update the saved PC (for infinite loop detection) and do the next pass:
+            last_PC = C.registers.PC;
+            switch ( last_PC ) {
+                case 0x008A:
+                    n += 2;
+                    break;
+            }
+        } else {
+            break;
         }
     }
     phri_cpu_summary(&C);

@@ -1,7 +1,7 @@
-__MAIN:             MV0L    R1, #10
-                    MV0L    R2, #0xCD
+__MAIN:             MOVZ    R1, #10
+                    MOVZ    R2, #0xCD
                     BRL     MULTIPLY
-ALL_DONE:           BR      ALL_DONE
+ALL_DONE:           HALT
 MULTIPLY:           PUSH    R1, R2
                     ORS     R3, R0, R0
 NEXT_PART_SUM:      LSR     R2, #1

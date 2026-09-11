@@ -11,6 +11,34 @@ find_package(Threads REQUIRED)
 configure_file(phri.h.in phri.h)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+
+#
+# Compiled feature checks
+#
+include(CheckCSourceCompiles)
+
+# Check for C bit-counting builtins:
+check_c_source_compiles("
+int main() {
+    unsigned int i = 42;
+    return __builtin_clz(i);
+}
+" HAVE_BUILTIN_CLZ)
+if(HAVE_BUILTIN_CLZ)
+    message(STATUS "Found __builtin_clz")
+endif()
+
+check_c_source_compiles("
+int main() {
+    unsigned int i = 42;
+    return __builtin_ctz(i);
+}
+" HAVE_BUILTIN_CTZ)
+if(HAVE_BUILTIN_CTZ)
+    message(STATUS "Found __builtin_ctz")
+endif()
+
+
 # Source files for the library:
 set(LIBPHRI_SOURCES
     phri_mem.c

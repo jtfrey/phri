@@ -1,7 +1,7 @@
-__MAIN:             MV0L    R1, #10         ; Multiplicand
-                    MV0L    R2, #0xCD       ; Multiplier
+__MAIN:             MOV     R1, #10         ; Multiplicand
+                    MOV     R2, #0xCD       ; Multiplier
                     BRL     MULTIPLY        ; Call the MULTIPLY subroutine
-ALL_DONE:           BR      ALL_DONE        ; Infinite loop
+ALL_DONE:           HALT
                     
 MULTIPLY:           PUSH    R1, R2          ; Save R1, R2 so we don't clobber them
                     ORS     R3, R0, R0      ; R3 <= 0, get [C]arry cleared

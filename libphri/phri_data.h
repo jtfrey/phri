@@ -28,13 +28,19 @@ enum __attribute__((packed)) {
     kphri_data_op_rgstrs_imm4_const_shift   = 3,                    /*!< Shift the masked constant */
     kphri_data_op_rgstrs_dsti_mask          = 0b0000000000000111,   /*!< The destination register index */
     
-    kphri_data_op_rgstrs_spcl               = 0b0000000001000000,   /*!< If set, special register operations */
-    kphri_data_op_rgstrs_spcl_from_gp       = 0b0000000000100000,   /*!< If set, move from g.p. to special register */
-    kphri_data_op_rgstrs_spcl_const         = 0b0000000000010000,   /*!< Operand is 4-bit immediate, SSR is implied dest */
-    kphri_data_op_rgstrs_spcl_imm4_mask     = 0b0000000000001111,   /*!< The 4-bit constant to introduce */
-    kphri_data_op_rgstrs_spcl_ssr           = 0b0000000000001000,   /*!< If not-const, when set instruction is w.r.t. SSR;
-                                                                         when clear is w.r.t. PC */
-    kphri_data_op_rgstrs_spcl_gpi_mask      = 0b0000000000000111,   /*!< If not-const, the general-purpose register index */
+    kphri_data_op_rgstrs_imm8               = 0b0000100000000000,   /*!< If set, register set using 8-bit immediate value */
+    kphri_data_op_rgstrs_imm8_const_mask    = 0b0000011111111000,   /*!< The 8-bit constant to use */
+    kphri_data_op_rgstrs_imm8_const_shift   = 3,                    /*!< Shift the masked 8-bit constant */
+    kphri_data_op_rgstrs_gp_to_ssr          = 0b0000000000100000,   /*!< If set, the SSR is modified using the low nibble of
+                                                                         a register */
+    kphri_data_op_rgstrs_imm4_to_ssr        = 0b0000000000010000,   /*!< If set, the DSEG of the SSR is set using a 4-bit
+                                                                         immediate value */
+    kphri_data_op_rgstrs_imm4_to_ssr_mask   = 0b0000000000001111,   /*!< Mask for the 4-bit DSEG constant */
+    kphri_data_op_rgstrs_ssr_to_gp          = 0b0000000000001000,   /*!< If set, g.p. register set to SSR */
+    kphri_data_op_rgstrs_pc_to_gp_mask      = 0b1111111111111000,   /*!< If all bits save the lowest 3 are unset, this is
+                                                                         a copy the PC to a g.p. register; this is never
+                                                                         directly tested, it's just the default case if
+                                                                         all other patterns are not matched */
     
     /* Memory mode components: */
     kphri_data_op_mem_cond                  = 0b0000010000000000,   /*!< Operation is conditional */

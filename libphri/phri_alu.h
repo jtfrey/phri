@@ -22,7 +22,7 @@ enum __attribute__((packed)) {
     kphri_alu_op_splmnt_sr          = 0b0111010000000000,   /*!< …it's an SR instruction */
     kphri_alu_op_splmnt_sr_op_mask  = 0b0000001100000000,   /*!< 2a. The bits in these positions… */
     kphri_alu_op_splmnt_sr_op_shift = 8,                    /*!< …indicate the µop to be used */
-    kphri_alu_op_splmnt_sr_const    = 0b0000000000001111,   /*!< Bitmask for the SR_ constant */
+    kphri_alu_op_splmnt_sr_const    = 0b0000000010001111,   /*!< Bitmask for the SR_ constant */
 
     kphri_alu_op_uop_mask           = 0b0111000000000000,   /*!< Bitmask for the ALU operation */
     kphri_alu_op_uop_shift          = 12,                   /*!< Shift for the ALU operation */

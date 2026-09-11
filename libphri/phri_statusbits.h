@@ -42,7 +42,8 @@ enum __attribute__((packed)) {
     kphri_sb_v      = 0b00000010,   /*!< The o[V]erflow flag bit position */
     kphri_sb_c      = 0b00000100,   /*!< The [C]arry flag bit position */
     kphri_sb_m      = 0b00001000,   /*!< The [M]inus flag bit position */
-    kphri_sb_mask   = 0b00001111    /*!< Mask of bits used in the F register */
+    kphri_sb_h      = 0b10000000,   /*!< The [H]alt flag bit position */
+    kphri_sb_mask   = 0b10001111    /*!< Mask of bits used in the F register */
 };
 
 #endif /* __PHRI_STATUSBITS_H__ */

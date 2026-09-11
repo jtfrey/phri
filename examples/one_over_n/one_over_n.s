@@ -8,7 +8,7 @@
 __MAIN:             MOV.L   R1, #2
                     BRL     ONE_OVER_N
                     
-LOCKUP:             BR      LOCKUP              ; Go into an infinite loop
+ALL_DONE:           HALT
 
 
 

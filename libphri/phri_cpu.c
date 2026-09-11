@@ -13,11 +13,13 @@
 #include "phri_data.h"
 #include "phri_branch.h"
 
-void
+bool
 phri_cpu_execinstr(
     phri_cpu_t  *cpu
 )
 {
+    if ( cpu->registers.F & kphri_sb_h ) return false;
+    
     // One cycle for decode, additional cycles added as necessary (memory requests, etc.)
     cpu->cycles++;
     
@@ -208,31 +210,45 @@ phri_cpu_execinstr(
                 cpu->dlu.shift = ((cpu->registers.INSTR & kphri_data_op_rgstrs_imm4_rot_mask) >> kphri_data_op_rgstrs_imm4_rot_shift) << 1;
                 cpu->dlu.not = (cpu->registers.INSTR & kphri_data_op_rgstrs_imm4_not) ? kphri_bit_on : kphri_bit_off;
             }
-            else if ( cpu->registers.INSTR & kphri_data_op_rgstrs_spcl ) {
-                if ( cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_const ) {
-                    srci = dsti = kphri_register_index_SSR;
-                    cpu->dlu.arg2 = (cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_imm4_mask);
-                    cpu->dlu.mask = 0x0000;
-                    cpu->dlu.shift = 0;
-                    cpu->dlu.not = kphri_bit_off;
-                }
-                else {
-                    if ( cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_from_gp ) {
-                        srci = cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_gpi_mask;
-                        dsti = (cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_ssr) ? kphri_register_index_SSR : kphri_register_index_PC;
-                    } else {
-                        srci = (cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_ssr) ? kphri_register_index_SSR : kphri_register_index_PC;
-                        dsti = cpu->registers.INSTR & kphri_data_op_rgstrs_spcl_gpi_mask;
-                    }                    
-                    cpu->dlu.arg2 = 0x0000;
-                    cpu->dlu.mask = 0xFFFF;
-                    cpu->dlu.shift = 0;
-                    cpu->dlu.not = kphri_bit_off;
-                }
+            else if ( cpu->registers.INSTR & kphri_data_op_rgstrs_imm8 ) {
+                srci = dsti = cpu->registers.INSTR & kphri_data_op_rgstrs_dsti_mask;
+                cpu->dlu.arg2 = (cpu->registers.INSTR & kphri_data_op_rgstrs_imm8_const_mask) >> kphri_data_op_rgstrs_imm8_const_shift;
+                cpu->dlu.mask = 0xFF00;
+                cpu->dlu.shift = 0;
+                cpu->dlu.not = kphri_bit_off;
+            }
+            else if ( cpu->registers.INSTR & kphri_data_op_rgstrs_gp_to_ssr ) {
+                srci = dsti = kphri_register_index_SSR;
+                cpu->dlu.arg2 = phri_cpu_rdr(cpu, cpu->registers.INSTR & kphri_data_op_rgstrs_dsti_mask) & 0x8F0F;
+                cpu->dlu.mask = 0x00F0;
+                cpu->dlu.shift = 0;
+                cpu->dlu.not = kphri_bit_off;
+            }
+            else if ( cpu->registers.INSTR & kphri_data_op_rgstrs_imm4_to_ssr ) {
+                srci = dsti = kphri_register_index_SSR;
+                cpu->dlu.arg2 = (cpu->registers.INSTR & kphri_data_op_rgstrs_imm4_to_ssr_mask);
+                cpu->dlu.mask = 0xFFF0,
+                cpu->dlu.shift = 0;
+                cpu->dlu.not = kphri_bit_off;
+            }
+            else if ( cpu->registers.INSTR & kphri_data_op_rgstrs_ssr_to_gp ) {
+                srci = kphri_register_index_SSR;
+                dsti = cpu->registers.INSTR & kphri_data_op_rgstrs_dsti_mask;
+                cpu->dlu.mask = 0x0000;
+                cpu->dlu.shift = 0;
+                cpu->dlu.not = kphri_bit_off;
+            }
+            else {
+                srci = kphri_register_index_PC;
+                dsti = cpu->registers.INSTR & kphri_data_op_rgstrs_dsti_mask;
+                cpu->dlu.mask = 0x0000;
+                cpu->dlu.shift = 0;
+                cpu->dlu.not = kphri_bit_off;
             }
             cpu->dlu.arg1 = phri_cpu_rdr(cpu, srci);
             phri_dlu_exec(&cpu->dlu);
             phri_cpu_wrr(cpu, dsti, cpu->dlu.result);
         }
     }
+    return true;
 }

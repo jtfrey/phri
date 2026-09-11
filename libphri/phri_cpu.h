@@ -95,7 +95,8 @@ phri_cpu_summary(
 {
     char            status[9];
     
-    status[0] = '-', status[1] = '-', status[2] = '-', status[3] = '-', 
+    status[0] = (cpu->registers.F & kphri_sb_h) ? 'H' : 'h',
+    status[1] = '-', status[2] = '-', status[3] = '-', 
     status[4] = (cpu->registers.F & kphri_sb_m) ? 'M' : 'm',
     status[5] = (cpu->registers.F & kphri_sb_c) ? 'C' : 'c',
     status[6] = (cpu->registers.F & kphri_sb_v) ? 'V' : 'v',
@@ -297,7 +298,7 @@ phri_cpu_senddata(
     phri_cpu_bus_wr(cpu);
 }
 
-void phri_cpu_execinstr(phri_cpu_t *cpu);
+bool phri_cpu_execinstr(phri_cpu_t *cpu);
 
 #endif /* __PHRI_CPU_H__ */
 

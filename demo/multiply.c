@@ -5,11 +5,10 @@
 
 #include "phri_bus.h"
 phri_word_t     asmbin[] = {
-                    0x1051,
-                    0x106A,
-                    0x1762,
+                    0x0851,
+                    0x0E6A,
                     0x6801,
-                    0x4FFF,
+                    0xF580,
                     0x3BB9,
                     0x3BBA,
                     0xD803,
@@ -23,7 +22,7 @@ phri_word_t     asmbin[] = {
                     0x59F8,
                     0x28BA,
                     0x28B9,
-                    0x0066 };
+                    0x4006 };
 
 int
 main()
@@ -41,14 +40,17 @@ main()
     while ( 1 ) {
         // Process an instruction and show the CPU summary:
         phri_cpu_fetchinstr(&C);
-        phri_cpu_execinstr(&C);
-        phri_cpu_summary(&C);
-        
-        // Detect an infinite loop (our end condition):
-        if ( C.registers.PC == last_PC ) break;
-        
-        // Update the saved PC (for infinite loop detection) and do the next pass:
-        last_PC = C.registers.PC;
+        if ( phri_cpu_execinstr(&C) ) {
+            phri_cpu_summary(&C);
+            
+            // Detect an infinite loop (our end condition):
+            if ( C.registers.PC == last_PC ) break;
+            
+            // Update the saved PC (for infinite loop detection) and do the next pass:
+            last_PC = C.registers.PC;
+        } else {
+            break;
+        }
     }
     printf("Program exited at $%02hhX%04hX\n", C.registers.PSEG, C.registers.PC);
                             

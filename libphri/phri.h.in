@@ -15,7 +15,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
+#include <errno.h>
 
 #define PHRI_VERSION_STRING "@PROJECT_VERSION@"
 #define PHRI_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
@@ -32,6 +35,12 @@ extern const unsigned PHRIVersionPatch;
  */
 #cmakedefine PHRI_OS_MACOSX
 #cmakedefine PHRI_OS_LINUX
+
+/*
+ * Bit counting built-ins
+ */
+#cmakedefine HAVE_BUILTIN_CLZ
+#cmakedefine HAVE_BUILTIN_CTZ
 
 /**
  * Type of a bit

@@ -29,7 +29,7 @@ PI_LOOP:            MOV     R1, R4              ; R1 <= R4 (n)
                     ADDS    R4, #4              ; R4 <= R4 + 4
                     BR.PL   PI_LOOP             ; So long as we are < 32767, go again
                     
-LOCKUP:             BR      LOCKUP              ; Go into an infinite loop
+LOCKUP:             HALT
 
 
 ;

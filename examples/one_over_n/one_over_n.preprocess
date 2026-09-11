@@ -1,6 +1,6 @@
 __MAIN:             MOV.L   R1, #2
                     BRL     ONE_OVER_N
-LOCKUP:             BR      LOCKUP
+ALL_DONE:           HALT
 ONE_OVER_N:         BITS    R1
                     B.EQ    L
                     CMP     R1, #1

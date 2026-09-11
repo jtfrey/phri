@@ -17,7 +17,7 @@ PI_LOOP:            MOV     R1, R4
                     ADD     R3, R3, R1
                     ADDS    R4, #4
                     BR.PL   PI_LOOP
-LOCKUP:             BR      LOCKUP
+LOCKUP:             HALT
 ONE_OVER_N:         BITS    R1
                     B.EQ    L
                     CMP     R1, #1
