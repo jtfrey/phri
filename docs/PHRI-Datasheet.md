@@ -188,19 +188,19 @@ Data movement encompasses instructions that move bits into registers; move bits 
 
 Introducing values into registers is a fundamental behavior of a processor.  The ISA includes instructions that transfer values from general-purpose registers to special-purpose registers — the `SSR` and `PC` registers — as well as instructions with embedded constants and bit-shift schemes.
 
-| Mnemonic                                | Bit pattern        | Description                                |
-| :-------------------------------------- | :----------------- | :----------------------------------------- |
-| `MOV          Rd, PC`                   | `0000000000000DDD` | Rd <= PC                               [1] |
-| `MOV          Rd, SSR`                  | `0000000000001DDD` | Rd <= SSR                              [2] |
-| `MOV          SSR, Rx`                  | `0000000000100XXX` | SSR <= Rx                              [3] |
-| `MOV          SSR, <#IMM4>`             | `000000000011CCCC` | R5 <= SSR                              [4] |
-| `MOV{Z}       Rd, #<IMM8>`              | `00001CCCCCCCCDDD` | Rd <= IMM8                             [5] |
-| `MOV{K|Z}{N}  Rd, #<IMM4>, ROR#(2*SSS)` | `0001NKSSSCCCCDDD` | Rd <= const                            [6] |
-| `  MOV{Z}     Rd, #<IMM4>, ROR#(2*SSS)` | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
-| `  MOVZN      Rd, #<IMM4>, ROR#(2*SSS)` | `000110SSSCCCCDDD` | Rd <= ~(IMM4 ROR {0,2,4,6,8,10,12,14})     |
-| `  MOVK       Rd, #<IMM4>, ROR#(2*SSS)` | `000101SSSCCCCDDD` | `MOVZ` but with untouched Rd bits retained |
-| `  MOVKN      Rd, #<IMM4>, ROR#(2*SSS)` | `000111SSSCCCCDDD` | `MOVZN` but with untouched Rd bits         |
-|                                         |                    | retained prior to bitwise not              |
+| Mnemonic                                 | Bit pattern        | Description                                |
+| :--------------------------------------- | :----------------- | :----------------------------------------- |
+| `MOV          Rd, PC`                    | `0000000000000DDD` | Rd <= PC                               [1] |
+| `MOV          Rd, SSR`                   | `0000000000001DDD` | Rd <= SSR                              [2] |
+| `MOV          SSR, Rx`                   | `0000000000100XXX` | SSR <= Rx                              [3] |
+| `MOV          SSR, <#IMM4>`              | `000000000011CCCC` | R5 <= SSR                              [4] |
+| `MOV{Z}       Rd, #<IMM8>`               | `00001CCCCCCCCDDD` | Rd <= IMM8                             [5] |
+| `MOV{K\|Z}{N}  Rd, #<IMM4>, ROR#(2*SSS)` | `0001NKSSSCCCCDDD` | Rd <= const                            [6] |
+| `  MOV{Z}     Rd, #<IMM4>, ROR#(2*SSS)`  | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
+| `  MOVZN      Rd, #<IMM4>, ROR#(2*SSS)`  | `000110SSSCCCCDDD` | Rd <= ~(IMM4 ROR {0,2,4,6,8,10,12,14})     |
+| `  MOVK       Rd, #<IMM4>, ROR#(2*SSS)`  | `000101SSSCCCCDDD` | `MOVZ` but with untouched Rd bits retained |
+| `  MOVKN      Rd, #<IMM4>, ROR#(2*SSS)`  | `000111SSSCCCCDDD` | `MOVZN` but with untouched Rd bits         |
+|                                          |                    | retained prior to bitwise not              |
 
 **[1]** There is no corresponding `MOV PC, Rx` since a `B Rx` instruction accomplishes the same thing.
 
@@ -270,15 +270,15 @@ It may be more natural for the programmer to think of the bit shifts in terms of
 
 Loading addresses into a register, either from an immediate value or from a label, is given its own pseudo-instructions:
 
-| Mnemonic                 | Actual code                            | Description                      |
-| :----------------------- | :------------------------------------- | :------------------------------- |
-| `ADR      Rd, <LABEL>`   | `MOV.L   Rd, LABEL & 0xFF`             | Rd <= <LABEL>                    |
-|                          | `MOV.H   Rd, (LABEL >> 8) & 0xFF`      |                                  |
-| `ADR      Rd, #${S}HHLL` | `MOV.L   Rd, #0x{S}HHLL & 0xFF`        | Rd <= $HHLL                      |
-|                          | `MOV.H   Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                  |
-| `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, LABEL >> 16, ROR#0`       | Rd <= <LABEL>.SEGMENT            |
-| `ADRS     Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL >> 16, ROR#0`  | Rd <= ${S}                       |
-| `ADRS     DSEG, <LABEL>` | `MOV     SSR, LABEL >> 16`             | SSR <= 0x0000 \| <LABEL>.SEGMENT |
+| Mnemonic                 | Actual code                            | Description                       |
+| :----------------------- | :------------------------------------- | :-------------------------------- |
+| `ADR      Rd, <LABEL>`   | `MOV.L   Rd, LABEL & 0xFF`             | Rd <= \<LABEL>                    |
+|                          | `MOV.H   Rd, (LABEL >> 8) & 0xFF`      |                                   |
+| `ADR      Rd, #${S}HHLL` | `MOV.L   Rd, #0x{S}HHLL & 0xFF`        | Rd <= $HHLL                       |
+|                          | `MOV.H   Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                   |
+| `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, LABEL >> 16, ROR#0`       | Rd <= \<LABEL>.SEGMENT            |
+| `ADRS     Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL >> 16, ROR#0`  | Rd <= ${S}                        |
+| `ADRS     DSEG, <LABEL>` | `MOV     SSR, LABEL >> 16`             | SSR <= 0x0000 \| \<LABEL>.SEGMENT |
 
 
 #### Memory-based
