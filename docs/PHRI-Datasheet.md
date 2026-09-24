@@ -232,7 +232,7 @@ The list above does not include an instruction to move one register's value to a
 | Mnemonic        | Actual code       | Description                              |
 | :-------------- | :---------------- | :--------------------------------------- |
 | `MOV  Rd, Rx`   | `OR   Rd, Rx, R0` | Rd <= Rx | R0 = Rx | 0x0000 = Rx         |
-| `MOV  Rd, Rx`   | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
+| `MOVN Rd, Rx`   | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
 | `MOV  Rd, #0`   | `OR   Rd, R0, R0` | Rd <= R0 | R0 = 0x0000 | 0x0000 = 0x0000 |
 
 Moving a 16-bit word into a register can be accomplished using up to 3 instructions, and can be heavily optimized by recognizing bit patterns in the word as well as in its bitwise NOT form.
