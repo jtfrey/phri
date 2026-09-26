@@ -78,16 +78,16 @@ It should be noted that there are no explicit no-operation (NOP) instructions pr
 
 All instructions with bit 15 set are handled by the ALU.
 
-This category includes instructions to perform two's-complement addition/subtraction, shift and rotate bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bit shift/rotate instructions always update the [C]arry register (and no others).
+This category includes instructions to perform two's-complement addition/subtraction, shift and rotate bits, and perform standard bitwise logic like AND, OR, and XOR.  This category also includes instructions to alter the condition flags in the `F` register (e.g. clear carry).  For operations with an `S` mode suffix, the processor's status flags will be updated after the ALU operation; bit shift/rotate instructions always update the [C]arry bit (and no others).  The ADD and SUB instructions ignore the [C]arry bit unless the `C` mode suffix is included.
 
 | Mnemonic                                  | Bit pattern        | Description                                       |
 | :---------------------------------------- | :----------------- | :------------------------------------------------ |
-| `ADD{C}    Rd, Rx, Ry`                    | `1000C0XXX0YYYDDD` | Rd <= Rx + Ry, {C}=+/-carry bit               [1] |
-| `ADD{C}    Rd, Rx, #<IMM3>`               | `1000C0XXX1cccDDD` | Rd <= Rx + IMM3, {C}=+/-carry bit             [1] |
-| `ADD{C}    Rd, #<IMM7>`                   | `1000C1cccccccDDD` | Rd <= Rd + IMM7, {C}=+/-carry bit             [1] |
-| `SUB{C}    Rd, Rx, Ry`                    | `1001C0XXX0YYYDDD` | Rd <= Rx - Ry, {C}=+/-carry bit               [1] |
-| `SUB{C}    Rd, Rx, #<IMM3>`               | `1001C0XXX1cccDDD` | Rd <= Rx - IMM3, {C}=+/-carry bit             [1] |
-| `SUB{C}    Rd, #<IMM7>`                   | `1001C1cccccccDDD` | Rd <= Rd - IMM7, {C}=+/-carry bit             [1] |
+| `ADD{C}    Rd, Rx, Ry`                    | `1000C0XXX0YYYDDD` | Rd <= Rx + Ry, {C}=include carry              [1] |
+| `ADD{C}    Rd, Rx, #<IMM3>`               | `1000C0XXX1cccDDD` | Rd <= Rx + IMM3, {C}=include carry            [1] |
+| `ADD{C}    Rd, #<IMM7>`                   | `1000C1cccccccDDD` | Rd <= Rd + IMM7, {C}=include carry            [1] |
+| `SUB{C}    Rd, Rx, Ry`                    | `1001C0XXX0YYYDDD` | Rd <= Rx - Ry, {C}=include carry              [1] |
+| `SUB{C}    Rd, Rx, #<IMM3>`               | `1001C0XXX1cccDDD` | Rd <= Rx - IMM3, {C}=include carry            [1] |
+| `SUB{C}    Rd, #<IMM7>`                   | `1001C1cccccccDDD` | Rd <= Rd - IMM7, {C}=include carry            [1] |
 | `LSL       Rd, Rx, Ry`                    | `101000XXX0YYYDDD` | Rd <= Rx << (Ry & 0xF)                        [2] |
 | `LSR       Rd, Rx, Ry`                    | `101010XXX0YYYDDD` | Rd <= Rx >> (Ry & 0xF)                        [2] |
 | `ASR       Rd, Rx, Ry`                    | `101100XXX0YYYDDD` | Rd <= Rx ASR (Ry & 0xF)                       [2] |
