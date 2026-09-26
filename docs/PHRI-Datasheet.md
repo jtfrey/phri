@@ -82,12 +82,12 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 | Mnemonic                                  | Bit pattern        | Description                                       |
 | :---------------------------------------- | :----------------- | :------------------------------------------------ |
-| `ADD{S}    Rd, Rx, Ry`                    | `1000S0XXX0YYYDDD` | Rd <= Rx + Ry, {S}=set status bits            [1] |
-| `ADD{S}    Rd, Rx, #<IMM3>`               | `1000S0XXX1CCCDDD` | Rd <= Rx + IMM3, {S}=set status bits          [1] |
-| `ADD{S}    Rd, #<IMM7>`                   | `1000S1CCCCCCCDDD` | Rd <= Rd + IMM7, {S}=set status bits          [1] |
-| `SUB{S}    Rd, Rx, Ry`                    | `1001S0XXX0YYYDDD` | Rd <= Rx - Ry, {S}=set status bits            [1] |
-| `SUB{S}    Rd, Rx, #<IMM3>`               | `1001S0XXX1CCCDDD` | Rd <= Rx - IMM3, {S}=set status bits          [1] |
-| `SUB{S}    Rd, #<IMM7>`                   | `1001S1CCCCCCCDDD` | Rd <= Rd - IMM7, {S}=set status bits          [1] |
+| `ADD{C}    Rd, Rx, Ry`                    | `1000C0XXX0YYYDDD` | Rd <= Rx + Ry, {C}=+/-carry bit               [1] |
+| `ADD{C}    Rd, Rx, #<IMM3>`               | `1000C0XXX1cccDDD` | Rd <= Rx + IMM3, {C}=+/-carry bit             [1] |
+| `ADD{C}    Rd, #<IMM7>`                   | `1000C1cccccccDDD` | Rd <= Rd + IMM7, {C}=+/-carry bit             [1] |
+| `SUB{C}    Rd, Rx, Ry`                    | `1001C0XXX0YYYDDD` | Rd <= Rx - Ry, {C}=+/-carry bit               [1] |
+| `SUB{C}    Rd, Rx, #<IMM3>`               | `1001C0XXX1cccDDD` | Rd <= Rx - IMM3, {C}=+/-carry bit             [1] |
+| `SUB{C}    Rd, #<IMM7>`                   | `1001C1cccccccDDD` | Rd <= Rd - IMM7, {C}=+/-carry bit             [1] |
 | `LSL       Rd, Rx, Ry`                    | `101000XXX0YYYDDD` | Rd <= Rx << (Ry & 0xF)                        [2] |
 | `LSR       Rd, Rx, Ry`                    | `101010XXX0YYYDDD` | Rd <= Rx >> (Ry & 0xF)                        [2] |
 | `ASR       Rd, Rx, Ry`                    | `101100XXX0YYYDDD` | Rd <= Rx ASR (Ry & 0xF)                       [2] |
@@ -117,17 +117,17 @@ This category includes instructions to perform two's-complement addition/subtrac
 | `CMN       Rd, #<IMM7>`                   | `111111CCCCCCCDDD` | Z <= Rd + IMM7, set status bits               [6] |
 | `SR        OP \| #<IMM2>, SYM \| #<IMM8>` | `111101IIH000MCVZ` | Alter F using OP and 8-bit constant         [7,8] |
 
-**[1]** For `ADD{S}` and `SUB{S}`, the value of the [C]arry flag will be added into the sum/difference.  To prevent unwanted carry-in, the programmer must ensure the [C]arry flag will not be set, either inherently given the program structure or by explicitly clearing it.  The ALU µop is transferred from bits 12…13 (`00`=`ADD`, `01`=`SUB`).
+**[1]** For `ADD{C}` and `SUB{C}`, the value of the [C]arry flag will be added into the sum/difference only when the "C" bit is set in the instruction.  The status bits are _always_ set after these instructions.  The ALU µop is transferred from bits 12…13 (`00`=`ADD`, `01`=`SUB`) and the ALU class from bits 13…14 is `00` (arithmetic class).
 
-**[2]** The processor's [C]arry flag will be the first bit shifted into the argument by `LSL`/`LSR`; `ASR` will repeatedly shift the MSb and `ROR` will shift the LSb into the MSb.  After these instructions, the [C]arry status flag will hold the last bit to be moved.  A shift of zero moves no bits, therefore the carry flag will be clear.  The ALU µop is transferred from bits 11…12 (`00`=`LSL`, `01`=`LSR`, `10`=`ASR`, and `11`=`ROR`).
+**[2]** The processor's [C]arry flag will be the first bit shifted into the argument by `LSL`/`LSR`; `ASR` will repeatedly shift the MSb and `ROR` will shift the LSb into the MSb.  After these instructions, the [C]arry status flag will hold the last bit to be moved.  A shift of zero moves no bits, therefore the carry flag will be clear.  The ALU µop is transferred from bits 11…12 (`00`=`LSL`, `01`=`LSR`, `10`=`ASR`, and `11`=`ROR`).  The ALU class from bits 13…14 is `01` (bitshift class).
 
 **[3]** The 3-bit constant second operand mode multiplies the immediate value by two to get shifts of {0, 2, 4, 6, 8, 12, 14} bit positions.  A zero-distance shift is a no-op, so that 3-bit value instead yields a single-bit shift.  In other words, `LSR Rd, Rx, #0` is not a valid instruction because the bit pattern triggers the CPU to do a `LSR Rd, Rx, #1`.
 
-**[4]** For `ANDS`, `ORS`, `XORS`, after the operation the [M]inus, o[V]erflow, and [C]arry flags in the status register are set to reflect the value of bits 15, 14, and 0, respectively.  The [Z]ero flag is set to reflect the value's being zero or not.  The ALU µop is transferred from bits 12…13 (`00`=`AND`, `01`=`OR`, `10`=XOR).
+**[4]** For `ANDS`, `ORS`, `XORS`, after the operation the [M]inus, o[V]erflow, and [C]arry flags in the status register are set to reflect the value of bits 15, 14, and 0, respectively.  The [Z]ero flag is set to reflect the value's being zero or not.  The ALU µop is transferred from bits 12…13 (`00`=`AND`, `01`=`OR`, `10`=XOR) and the ALU class from bits 13…14 is `10` (logic class).
 
 **[5]** For `AND` and `XOR` with two source register operands, if `Ry` is `R0` the value of that register is inverted to `0xFFFF`, since that pattern is far more useful in bitwise and/exclusive or operations.
 
-**[6]** Normally the `ADDS` and `SUBS` instructions with `R0`/`Z` as the destination register suffice for comparisons, but that restricts non-destructive comparison with a 3-bit immediate value.  Explicit 7-bit compare/compare-negated instructions are present to address that deficiency.  The ALU µop is selected from bits 10…11; when bitwise-NOT is applied, the `10` from `CMP` becomes `01` (the µop for subtract) and the `11` from `CMN` becomes `00` (the µop for add).
+**[6]** Normally the `ADD` and `SUB` instructions with `R0`/`Z` as the destination register suffice for comparisons, but that restricts non-destructive comparison with a 3-bit immediate value.  Explicit 7-bit compare/compare-negated instructions are present to address that deficiency.  The ALU µop is selected from bits 10…11; when bitwise-NOT is applied, the `10` from `CMP` becomes `01` (the µop for subtract) and the `11` from `CMN` becomes `00` (the µop for add).
 
 **[7]** The cluster of SR* instructions reuse the bit pattern associated with the AND/OR/XOR instructions, implying that the same gating of the ALU could be reused by the status register alteration logic.  The status register is 8-bit and the instruction has room for an 8-bit constant, so were the ISA to be extended in the future this instruction could include them, as well.  In assembly the OPeration to be performed can be specified symbolically using AND, OR, or XOR (case insensitive):  `SR   OR, #0b1010` would reproduce bit pattern `0b1`**`101`**`…` from `OR{S}` in the `…1II…` component of the `SR` opcode (`AND`=`00`, `OR`=`01`, `XOR`=`10`).
 
@@ -136,18 +136,14 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 #### Pseudo-instructions
 
-While there are no explicit `CMP` or `CMN` modes for multiple registers or short (3-bit) constants, the assembler accepts pseudo-instructions that are translated to `SUBS` and `ADDS` instructions:
+While there are no explicit `CMP` or `CMN` modes for multiple registers or short (3-bit) constants, the assembler accepts pseudo-instructions that are translated to `SUB` and `ADD` instructions:
 
 | Mnemonic             | Actual code                  | Description                                                    |
 | :------------------- | :--------------------------- | :------------------------------------------------------------- |
-| `CMP.R Rx, Ry`       | `SRCC`                       | Subtract Ry from Rx, set flags, discard result                 |
-|                      | `SUBS R0, Rx, Ry`            |                                                                |
-| `CMP.I Rx, #<IMM3>`  | `SRCC`                       | Subtract the 3-bit constant from Rx, set flags, discard result |
-|                      | `SUBS R0, Rx, #<IMM3>`       |                                                                |
-| `CMN.R Rx, Ry`       | `SRCC`                       | Add Ry to Rx, set flags, discard result                        |
-|                      | `ADDS R0, Rx, Ry`            |                                                                |
-| `CMN.I Rx, #<IMM3>`  | `SRCC`                       | Add the 3-bit constant to Rx, set flags, discard result        |
-|                      | `ADDS R0, Rx, #<IMM3>`       |                                                                |
+| `CMP.R Rx, Ry`       | `SUB R0, Rx, Ry`             | Subtract Ry from Rx, set flags, discard result                 |
+| `CMP.I Rx, #<IMM3>`  | `SUB R0, Rx, #<IMM3>`        | Subtract the 3-bit constant from Rx, set flags, discard result |
+| `CMN.R Rx, Ry`       | `ADD R0, Rx, Ry`             |                                                                |
+| `CMN.I Rx, #<IMM3>`  | `ADD R0, Rx, #<IMM3>`        |                                                                |
 
 Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an `ANDS` that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by `ANDS`, `ROR` instructions can be used to test bit 1 and all even-indexed bits.
 
@@ -232,7 +228,7 @@ The list above does not include an instruction to move one register's value to a
 | Mnemonic        | Actual code       | Description                              |
 | :-------------- | :---------------- | :--------------------------------------- |
 | `MOV  Rd, Rx`   | `OR   Rd, Rx, R0` | Rd <= Rx | R0 = Rx | 0x0000 = Rx         |
-| `MOVN Rd, Rx`   | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
+| `MOV  Rd, Rx`   | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
 | `MOV  Rd, #0`   | `OR   Rd, R0, R0` | Rd <= R0 | R0 = 0x0000 | 0x0000 = 0x0000 |
 
 Moving a 16-bit word into a register can be accomplished using up to 3 instructions, and can be heavily optimized by recognizing bit patterns in the word as well as in its bitwise NOT form.
