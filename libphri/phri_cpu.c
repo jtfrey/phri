@@ -27,7 +27,8 @@ phri_cpu_execinstr(
         // ALU:
         phri_word_t     uop = (cpu->registers.INSTR & kphri_alu_op_uop_mask);
         phri_byte_t     dsti = (cpu->registers.INSTR & kphri_alu_op_rd_mask);
-        phri_bit_t      setflags = (cpu->registers.INSTR & kphri_alu_op_scond) ? kphri_bit_on : kphri_bit_off;
+        phri_bit_t      c_s_bit = (cpu->registers.INSTR & kphri_alu_op_scond) ? kphri_bit_on : kphri_bit_off;
+        phri_bit_t      setflags;
         
         phri_alu_init(cpu->alu);
         if ( (uop == kphri_alu_op_splmnt) && (cpu->registers.INSTR & kphri_alu_op_splmnt_cmpn_mask) != kphri_alu_op_splmnt_cmpn ) {
@@ -66,16 +67,21 @@ phri_cpu_execinstr(
             switch ( cpu->alu.path ) {
                 case kphri_alu_path_arith:
                 case kphri_alu_path_logic:
+                    /* Honor the carry bit if the "c" bit was set in the instruction */
+                    cpu->alu.carry_in &= c_s_bit;
                     cpu->alu.uop = (uop >> kphri_alu_op_uop_shift) & 0b11;
+                    setflags = kphri_bit_on;
                     break;
                 case kphri_alu_path_bitshift:
                     cpu->alu.uop = (cpu->registers.INSTR & kphri_alu_op_bitshiftmode_mask) >> kphri_alu_op_bitshiftmode_shift;
+                    setflags = c_s_bit;
                     break;
                 case kphri_alu_path_splmnt:
                     dsti = 0;
                     cpu->alu.carry_in = kphri_bit_off;
                     cpu->alu.uop = ((cpu->registers.INSTR & kphri_alu_op_splmnt_uop_mask) ^ kphri_alu_op_splmnt_uop_mask) \
                                             >> kphri_alu_op_splmnt_uop_shift;
+                    setflags = c_s_bit;
                     break;
             }
         }

@@ -9,6 +9,16 @@ target_link_libraries(alu_test
     PRIVATE
         phri)
 
+#
+# Test a basic addition
+#
+add_executable(add_test)
+target_sources(add_test
+    PRIVATE
+        add_test.c)
+target_link_libraries(add_test
+    PRIVATE
+        phri)
 
 #
 # Demo program that runs a PHRI program that does bit-shifted

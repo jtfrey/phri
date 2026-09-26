@@ -18,12 +18,10 @@ DIV_LOOP:           SRCC
                     BR.NE   ADJUST_REMAINDER
                     CMP     R2, R1
                     BR.CS   NEXT_ITERATION
-ADJUST_REMAINDER:   SRCC
-                    SUBS    R2, R2, R1
-                    SUBS    R3, R3, R0
+ADJUST_REMAINDER:   SUB     R2, R2, R1
+                    SUBC    R3, R3, R0
                     OR      R4, #0b1
-NEXT_ITERATION:     SRCC
-                    SUBS    R5, R5, #1
+NEXT_ITERATION:     SUB     R5, R5, #1
                     BR.EQ   EXIT_LOOP
                     SRCC
                     LSL     R2, R2, #1

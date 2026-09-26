@@ -63,9 +63,8 @@ DIV_LOOP:           ;
 ADJUST_REMAINDER:   ;
                     ; Remainder -= n
                     ;
-                    SRCC                        ; Clear carry
-                    SUBS    R2, R2, R1          ; R2 <= R2 - R1
-                    SUBS    R3, R3, R0          ; R3 <= R3 - (0 + [C])
+                    SUB     R2, R2, R1          ; R2 <= R2 - R1
+                    SUBC    R3, R3, R0          ; R3 <= R3 - (0 + [C])
                     ;
                     ; Set bit 0 in the quotient:
                     ;
@@ -74,8 +73,7 @@ ADJUST_REMAINDER:   ;
 NEXT_ITERATION:     ;
                     ; Decrement iteration count:
                     ;
-                    SRCC                        ; Clear carry
-                    SUBS    R5, R5, #1          ; R5 <= R5 - 1
+                    SUB     R5, R5, #1          ; R5 <= R5 - 1
                     BR.EQ   EXIT_LOOP           ; All done!
                     
                     ;
