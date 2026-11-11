@@ -123,7 +123,7 @@ This category includes instructions to perform two's-complement addition/subtrac
 
 **[2]** The processor's [C]arry flag will be the first bit shifted into the argument by `LSL`/`LSR`; `ASR` will repeatedly shift the MSb and `ROR` will shift the LSb into the MSb.  After these instructions, the [C]arry status flag will hold the last bit to be moved.  A shift of zero moves no bits, therefore the carry flag will be clear.  The ALU µop is transferred from bits 11…12 (`00`=`LSL`, `01`=`LSR`, `10`=`ASR`, and `11`=`ROR`).  The ALU class from bits 13…14 is `01` (bitshift class).
 
-**[3]** The 3-bit constant second operand mode multiplies the immediate value by two to get shifts of {0, 2, 4, 6, 8, 12, 14} bit positions.  A zero-distance shift is a no-op, so that 3-bit value instead yields a single-bit shift.  In other words, `LSR Rd, Rx, #0` is not a valid instruction because the bit pattern triggers the CPU to do a `LSR Rd, Rx, #1`.
+**[3]** The 3-bit constant second operand mode multiplies the immediate value by two to get shifts of {0, 2, 4, 6, 8, 10, 12, 14} bit positions.  A zero-distance shift is a no-op, so that 3-bit value instead yields a single-bit shift.  In other words, `LSR Rd, Rx, #0` is not a valid instruction because the bit pattern triggers the CPU to do a `LSR Rd, Rx, #1`.
 
 **[4]** For `ANDS`, `ORS`, `XORS`, after the operation the [M]inus, o[V]erflow, and [C]arry flags in the status register are set to reflect the value of bits 15, 14, and 0, respectively.  The [Z]ero flag is set to reflect the value's being zero or not.  The ALU µop is transferred from bits 12…13 (`00`=`AND`, `01`=`OR`, `10`=XOR) and the ALU class from bits 13…14 is `10` (logic class).
 
