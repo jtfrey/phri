@@ -103,15 +103,15 @@ This category includes instructions to perform two's-complement addition/subtrac
 | `ROR       Rd, Rx, #<IMM3>`               | `101110XXX1CCCDDD` | Rd <= Rx ROR (2 * IMM3)                       [2] |
 | `ROR       Rd, Rx, #1`                    | `101110XXX1000DDD` | Rd <= Rx ROR 1                              [2,3] |
 | `LSL       Rd, #<IMM7>`                   | `101001CCCCCCCDDD` | Rd <= Rd << (IMM7 & 0xF)                      [2] |
-| `LSR       Rd, #<IMM7>`                   | `101011CCCCCCCDDD` | Rd <= Rd << (IMM7 & 0xF)                      [2] |
+| `LSR       Rd, #<IMM7>`                   | `101011CCCCCCCDDD` | Rd <= Rd >> (IMM7 & 0xF)                      [2] |
 | `ASR       Rd, #<IMM7>`                   | `101101CCCCCCCDDD` | Rd <= Rd ASR (IMM7 & 0xF)                     [2] |
 | `ROR       Rd, #<IMM7>`                   | `101111CCCCCCCDDD` | Rd <= Rd ROR (IMM7 & 0xF)                     [2] |
 | `AND{S}    Rd, Rx, Ry`                    | `1100S0XXX0YYYDDD` | Rd <= Rx & Ry, {S}=set status bits          [4,5] |
 | `AND{S}    Rd, Rx, #<IMM3>`               | `1100S0XXX1CCCDDD` | Rd <= Rx & IMM3, {S}=set status bits          [4] |
 | `AND{S}    Rd, #<IMM7>`                   | `1100S1CCCCCCCDDD` | Rd <= Rd & IMM7, {S}=set status bits          [4] |
-| `OR{S}     Rd, Rx, Ry`                    | `1101S0XXX0YYYDDD` | Rd <= Rx | Ry, {S}=set status bits            [4] |
-| `OR{S}     Rd, Rx, #<IMM3>`               | `1101S0XXX1CCCDDD` | Rd <= Rx | IMM3, {S}=set status bits          [4] |
-| `OR{S}     Rd, #<IMM7>`                   | `1101S1CCCCCCCDDD` | Rd <= Rd | IMM7, {S}=set status bits          [4] |
+| `OR{S}     Rd, Rx, Ry`                    | `1101S0XXX0YYYDDD` | Rd <= Rx \| Ry, {S}=set status bits           [4] |
+| `OR{S}     Rd, Rx, #<IMM3>`               | `1101S0XXX1CCCDDD` | Rd <= Rx \| IMM3, {S}=set status bits         [4] |
+| `OR{S}     Rd, #<IMM7>`                   | `1101S1CCCCCCCDDD` | Rd <= Rd \| IMM7, {S}=set status bits         [4] |
 | `XOR{S}    Rd, Rx, Ry`                    | `1110S0XXX0YYYDDD` | Rd <= Rx ^ Ry, {S}=set status bits          [4,5] |
 | `XOR{S}    Rd, Rx, #<IMM3>`               | `1110S0XXX1CCCDDD` | Rd <= Rx ^ IMM3, {S}=set status bits          [4] |
 | `XOR{S}    Rd, #<IMM7>`                   | `1110S1CCCCCCCDDD` | Rd <= Rd ^ IMM7, {S}=set status bits          [4] |
