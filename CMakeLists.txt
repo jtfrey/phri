@@ -21,3 +21,4 @@ endif()
 
 add_subdirectory(libphri)
 add_subdirectory(demo)
+add_subdirectory(phri-as)

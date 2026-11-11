@@ -24,9 +24,7 @@ A program counter (`PC`) register holds the 16-bit address of the instruction th
 
 Instructions that load/store data must also work with memory addresses.  A separate *data segment* or `DSEG` comes from the low nibble of the `MSEG` register.  Like the `PSEG`, the `DSEG` is initialized to zero.  It can be directly modified by user code to alter the target address of subsequent load/store instructions.  If there were a single segment value, user code would effectively switch itself out of scope when altering a singular segment register; keeping the `PSEG` and `DSEG` separate keeps the `PC` functional.  The programmer should bear in mind, though, that the `DSEG` is **not** automatically adjusted:  user code must handle the `DSEG` adjustments as necessary to access data held in other segments.  This has a direct effect on PHRI stacks:  a stack can never exceed 64 KiB in size and it is up to the user code to ensure the correct `DSEG` is selected when pushing/popping data.
 
-The instruction register (`INSTR`) latches the instruction word when one is fetched.
-
-The final register `F` is an 8-bit set of condition (status) flags.  Only five bits are currently utilized:
+The `F` register is an 8-bit set of condition (status) flags.  Only five bits are currently utilized:
 
 - `H`: the halt flag, set to indicate the processor should stop executing code
 - `M`: the minus flag, set to indicate a value has bit 15 set
@@ -35,6 +33,10 @@ The final register `F` is an 8-bit set of condition (status) flags.  Only five b
     - this flag is also set to indicate the captured bit index value on bit shift operations
 - `V`: the overflow flag, set to indicate a signed arithmetic operation produced a carry out of bit 14
 - `Z`: the zero flag, set to indicate a value was zero, clear if non-zero
+
+The `MSEG` and `F` registers collectively form the 16-bit Segment and Status Register, `SSR`.  The `MSEG` is its LSB and the `SSR` is its MSB.  Instructions are present that allow for transfer and manipulation of the `SSR` as a whole.
+
+The instruction register (`INSTR`) latches the instruction word when one is fetched.
 
 ### Condition codes
 
@@ -189,7 +191,7 @@ Introducing values into registers is a fundamental behavior of a processor.  The
 | `MOV          Rd, PC`                    | `0000000000000DDD` | Rd <= PC                               [1] |
 | `MOV          Rd, SSR`                   | `0000000000001DDD` | Rd <= SSR                              [2] |
 | `MOV          SSR, Rx`                   | `0000000000100XXX` | SSR <= Rx                              [3] |
-| `MOV          SSR, <#IMM4>`              | `000000000011CCCC` | R5 <= SSR                              [4] |
+| `MOV          SSR, <#IMM4>`              | `000000000011CCCC` | SSR <= IMM4                            [4] |
 | `MOV{Z}       Rd, #<IMM8>`               | `00001CCCCCCCCDDD` | Rd <= IMM8                             [5] |
 | `MOV{K\|Z}{N}  Rd, #<IMM4>, ROR#(2*SSS)` | `0001NKSSSCCCCDDD` | Rd <= const                            [6] |
 | `  MOV{Z}     Rd, #<IMM4>, ROR#(2*SSS)`  | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
@@ -364,13 +366,13 @@ Since `x` is even, the conditional fails and the increment must be skipped by br
 two_a_plus_one:
             ADD         A, A, A         ; A <= A + A = 2A
             ADD         A, #1           ; A <= A + 1
-            MOV         PC, L           ; restore saved PC value in R6/L 
+            B           L               ; restore saved PC value in R6/L 
 
 three_a:    PUSH        R1              ; Save the return address on the stack
             ADD         R1, A, A        ; R1 <= A + A = 2A
             ADD         A, A, R1        ; A <= A + R1 = A + 2A = 3A
             POP         R1              ; Restore return address from stack
-            MOV         PC, R1          ; restore saved PC value in R1
+            B           R1              ; restore saved PC value in R1
 ```
 
 
@@ -382,10 +384,10 @@ To redirect execution to an explicit address in memory, a 16-bit value is requir
 | :---------------- | :----------------- | :---------------------------------------------- |
 | `B        Rx`     | `0100000000000XXX` | PC <= Rx                                        |
 | `BL       Rx, Ry` | `011000000YYY0XXX` | Ry <= PC, PC <= Rx           (Rx = Ry is valid) |
-| `B.<CC>   Rx`     | `0101SSS000000XXX` | If CC: PC <= Rx                                 |
-| `BL.<CC>  Rx, Ry` | `0111SSS00YYY0XXX` | If CC: Ry <= PC, PC <= Rx    (Rx = Ry is valid) |
+| `B.<CC>   Rx`     | `0101ccc000000XXX` | If CC: PC <= Rx                                 |
+| `BL.<CC>  Rx, Ry` | `0111ccc00YYY0XXX` | If CC: Ry <= PC, PC <= Rx    (Rx = Ry is valid) |
 
-The `SSS` bits represent the condition code which, if satisfied, will cause the instruction to be executed.  The `XXX` and `YYY` are register indices.
+The `ccc` bits represent the condition code which, if satisfied, will cause the instruction to be executed.  The `XXX` and `YYY` are register indices.
 
 ##### Pseudo instructions
 
@@ -419,9 +421,9 @@ Since instructions are 16-bit and the ISA demands 16-bit alignment for code, the
 | :------------------ | :----------------- | :------------------------------------------------- |
 | `BR       Rx`       | `0100000000001XXX` | PC <= PC + Rx                                      |
 | `BRL      Rx, Ry`   | `011000000YYY1XXX` | Ry <= PC, PC <= PC + Rx         (Rx = Ry is valid) |
-| `BR.<CC>  Rx`       | `0101SSS000001XXX` | If CC: PC <= PC + Rx                               |
-| `BRL.<CC> Rx, Ry`   | `0111SSS00YYY1XXX` | If CC: Ry <= PC, PC <= PC + Rx  (Rx = Ry is valid) |
+| `BR.<CC>  Rx`       | `0101ccc000001XXX` | If CC: PC <= PC + Rx                               |
+| `BRL.<CC> Rx, Ry`   | `0111ccc00YYY1XXX` | If CC: Ry <= PC, PC <= PC + Rx  (Rx = Ry is valid) |
 | `BR       <OFFSET>` | `01001CCCCCCCCCCC` | PC <= PC + (OFFSET << 1)               (11b const) |
 | `BRL      <OFFSET>` | `01101CCCCCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)     (11b const) |
-| `BR.<CC>  <OFFSET>` | `0101SSS1CCCCCCCC` | PC <= PC + (OFFSET << 1)                (8b const) |
-| `BRL.<CC> <OFFSET>` | `0111SSS1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)      (8b const) |
+| `BR.<CC>  <OFFSET>` | `0101ccc1CCCCCCCC` | PC <= PC + (OFFSET << 1)                (8b const) |
+| `BRL.<CC> <OFFSET>` | `0111ccc1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)      (8b const) |
