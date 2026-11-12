@@ -227,11 +227,11 @@ Introducing values into registers is a fundamental behavior of a processor.  The
 
 The list above does not include an instruction to move one register's value to another; basic register-to-register movement is implemented using `OR` and `XOR`:
 
-| Mnemonic        | Actual code       | Description                              |
-| :-------------- | :---------------- | :--------------------------------------- |
-| `MOV  Rd, Rx`   | `OR   Rd, Rx, R0` | Rd <= Rx | R0 = Rx | 0x0000 = Rx         |
-| `MOV  Rd, Rx`   | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx        |
-| `MOV  Rd, #0`   | `OR   Rd, R0, R0` | Rd <= R0 | R0 = 0x0000 | 0x0000 = 0x0000 |
+| Mnemonic        | Actual code       | Description                                |
+| :-------------- | :---------------- | :----------------------------------------- |
+| `MOV  Rd, Rx`   | `OR   Rd, Rx, R0` | Rd <= Rx \| R0 = Rx \| 0x0000 = Rx         |
+| `MOVN Rd, Rx`   | `XOR  Rd, Rx, R0` | Rd <= Rx ^ R0 = Rx ^ 0xFFFF = ~Rx          |
+| `MOV  Rd, #0`   | `OR   Rd, R0, R0` | Rd <= R0 \| R0 = 0x0000 \| 0x0000 = 0x0000 |
 
 Moving a 16-bit word into a register can be accomplished using up to 3 instructions, and can be heavily optimized by recognizing bit patterns in the word as well as in its bitwise NOT form.
 
@@ -257,12 +257,12 @@ Moving a 16-bit word into a register can be accomplished using up to 3 instructi
 
 Many negative constants can be loaded in fewer instructions through creative application of the bitwise-NOT and bit shift, e.g. `MOVZN  Rd, #0b0001, ROR#0` would load Rd with `0xFFFE` or `-2`.  Loading 12- or 8-bit constants behave in similar fashion, but the two special cases of replacing the high- or low-byte of a register are included:
 
-| Mnemonic                | Actual code                         | Description                              |
-| :---------------------- | :---------------------------------- | :--------------------------------------- |
-| `MOVK.L    Rd, #<IMM8>` | `MOVK   Rd, #<IMM8> & 0xF, ROR#0`   | Move each nibble of the 8-bit byte into  |
-|                         | `MOVK   Rd, #<IMM8> >> 4, ROR#12`   | into the low-byte of Rd in sequence.     |
-| `MOVK.H    Rd, #<IMM8>` | `MOVK   Rd, #<IMM8> & 0xF, ROR#8`   | Move each nibble of the 8-bit byte into  |
-|                         | `MOVK   Rd, #<IMM8> >> 4, ROR#4`    | into the high-byte of Rd in sequence.    |
+| Mnemonic                | Actual code                               | Description                              |
+| :---------------------- | :---------------------------------------- | :--------------------------------------- |
+| `MOVK.L    Rd, #<IMM8>` | `MOVK   Rd, #<IMM8> & 0xF, ROR#0`         | Move each nibble of the 8-bit byte into  |
+|                         | `MOVK   Rd, #(<IMM8> >> 4) & 0xF, ROR#12` | into the low-byte of Rd in sequence.     |
+| `MOVK.H    Rd, #<IMM8>` | `MOVK   Rd, #<IMM8> & 0xF, ROR#8`         | Move each nibble of the 8-bit byte into  |
+|                         | `MOVK   Rd, #(<IMM8> >> 4) & 0xF, ROR#4`  | into the high-byte of Rd in sequence.    |
 
 It may be more natural for the programmer to think of the bit shifts in terms of an ROL; the assembler can accept `ROL#<shift>` syntax and reinterpret it as `ROR#(16 - <shift>)%16`.
 
@@ -322,10 +322,14 @@ The value at the memory address in `SP` is read into `R5`, then `SP` is post-inc
 
 Because stacks are frequently used, the ISA includes pseudo instructions to simplify their use.
 
-| Mnemonic               | Actual code                      | Description                          |
-| :--------------------- | :------------------------------- | :----------------------------------- |
-| `PUSH     Rx{, Ry, …}` | `STO  #-2, [SP], R#` for each R# | Push Rx, Ry, … to the stack in `SP`  |
-| `POP      Rx{, Ry, …}` | `LDR  R#, [SP], #+2` for each R# | Pop Rx, Ry, … from the stack in `SP` |
+| Mnemonic               | Actual code                      | Description                              |
+| :--------------------- | :------------------------------- | :--------------------------------------- |
+| `PUSH     Rx{, Ry, …}` | `STO  #-2, [SP], R#` for each R# | Push Rx, Ry, … to the stack in `SP`  [1] |
+| `POP      Rx{, Ry, …}` | `LDR  R#, [SP], #+2` for each R# | Pop Rx, Ry, … from the stack in `SP` [2] |
+
+**[1]** The registers are pushed in the *same sequence* as the operand list.  They must be popped in reverse order (see **[2]** for the `POP` pseudo-instruction).
+
+**[2]** The registers are popped in the *reverse sequence* of the operand list.  They should have been pushed in the sequence as written (see **[1]** for the `PUSH` pseudo-instruction).
 
 Loading/storing data to the address in a register without an offset is realized using `R0`/`Z` as the `Ry` operand, but a pseudo-instruction that omits the explicit specification of `R0`/`Z` is provided:
 
