@@ -431,3 +431,12 @@ Since instructions are 16-bit and the ISA demands 16-bit alignment for code, the
 | `BRL      <OFFSET>` | `01101CCCCCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)     (11b const) |
 | `BR.<CC>  <OFFSET>` | `0101ccc1CCCCCCCC` | PC <= PC + (OFFSET << 1)                (8b const) |
 | `BRL.<CC> <OFFSET>` | `0111ccc1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)      (8b const) |
+
+
+## System startup/reset
+
+On hardware power-on or reset, the PHRI hardware initializes all mutable memory and registers to zero.  This places both the `PSEG` and `DSEG` in segment `$0` and places the `PC` at `$0000` in that segment.  Since `R7`/`SP` starts at `$0000` the stack will build downwards from the top of segment `$0` — the first word pushed will reside at `$FFFE`.
+
+Typically a ROM containing system bootstrapping code will be located at `$0000` in segment `$0`.  Since the `PC` starts at that address, at power-on/reset the CPU will begin executing that ROM code.
+
+The data bus is pulled low by default on read; if no hardware responds to the address a zero word will be read.  With the `PC` starting at `$0000`, on a system devoid of any memory devices the CPU will read a `0x0000` instruction.  That decodes to `MOV R0, PC` — transfer the `PC` to register `R0` (discarding the value).  The `PC` will advance to `$0002` and fetch another `0x0000` instruction.  As this instruction stream executes, eventually the `PSEG` will increment to `$1` and the `PC` will wrap back around to `$0000` before continuing likewie through that segment of memory.  Given enough time, the `PSEG` will increment from `$F` back to `$0` and repeat the entire sequence again.  In this way, the CPU instruction fetch, decode, and execute can be tested and the march of the `PC` and `PSEG` registors can be observed.
