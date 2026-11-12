@@ -405,7 +405,7 @@ Since `R0`/`Z` is always zero, the `PC` is set to `$0000` by this instruction.  
 
 | Mnemonic  | Actual code | Description     |
 | :-------- | :---------- | :-------------- |
-| `RST`     | `B    R0`   | PC <= `$0000`   |
+| `RSTRT`   | `B    R0`   | PC <= `$0000`   |
 
 A conditional and unconditional `RET` instruction makes use of the absolute `B` instruction and the conventional linking register:
 
