@@ -1,6 +1,6 @@
 # PHRI Data Sheet
 
-The PHRI (PHRI is a Hypothetical RISC ISA) is an invented 16-bit ISA.  It features a uniform 16-bit data bus and 20-bit address bus; memory is addressed in *segments* of 64 KiB.
+The PHRI (PHRI is a Hypothetical RISC ISA) is an invented 16-bit ISA.  It features a 16-bit data bus and 20-bit address bus; memory is addressed in *segments* of 64 KiB.
 
 
 ## Register set
@@ -22,7 +22,7 @@ There are eight general-purpose registers labelled R0 through R7; R0 is a read-o
 
 This is merely a suggested convention:  user software can task each of the registers (except `R0`/`Z` and in some cases `R6`/`L`) to whatever purpose is useful.
 
-A program counter (`PC`) register holds the 16-bit address of the instruction that will be fetched next.  At boot, the `PC` is initialized to `$00000` — program code is expected to originate at this address.  The leading nibble comes from the *program counter segment* or `PSEG`, which comes from the high nibble of the `MSEG` register.  When the program counter is updated using a relative offset — as well as instruction fetch — the `PSEG` will wrap to the subsequent/previous segment automatically when crossing a 64 KiB boundary.
+A program counter (`PC`) register holds the low 16-bits of the address of the instruction that will be fetched next.  An *effective address* combines the `PC` with the 4-bit *program counter segment* or `PSEG`, which comes from the high nibble of the `MSEG` register.  When the program counter is updated using a relative offset — as well as instruction fetch — the `PSEG` will wrap to the subsequent/previous segment automatically when crossing a 64 KiB boundary.
 
 Instructions that load/store data must also work with memory addresses.  A separate *data segment* or `DSEG` comes from the low nibble of the `MSEG` register.  Like the `PSEG`, the `DSEG` is initialized to zero.  It can be directly modified by user code to alter the target address of subsequent load/store instructions.  If there were a single segment value, user code would effectively switch itself out of scope when altering a singular segment register; keeping the `PSEG` and `DSEG` separate keeps the `PC` functional.  The programmer should bear in mind, though, that the `DSEG` is **not** automatically adjusted:  user code must handle the `DSEG` adjustments as necessary to access data held in other segments.  This has a direct effect on PHRI stacks:  a stack can never exceed 64 KiB in size and it is up to the user code to ensure the correct `DSEG` is selected when pushing/popping data.
 
@@ -478,10 +478,12 @@ The *immediate offset relative* mode sources the offset from a constant embedded
 | `BR.<CC>  <OFFSET>` | `0101ccc1CCCCCCCC` | PC <= PC + (OFFSET * 2)                 (8b const) |
 | `BRL.<CC> <OFFSET>` | `0111ccc1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET * 2)       (8b const) |
 
+
+
 ## System startup/reset
 
 On hardware power-on or reset, the PHRI hardware initializes all mutable memory and registers to zero.  This places both the `PSEG` and `DSEG` in segment `$0` and places the `PC` at `$0000` in that segment.  Since `R7`/`SP` starts at `$0000` the stack will build downwards from the top of segment `$0` — the first word pushed will reside at `$FFFE`.
 
-Typically a ROM containing system bootstrapping code will be located at `$0000` in segment `$0`.  Since the `PC` starts at that address, at power-on/reset the CPU will begin executing that ROM code.
+Typically a ROM containing system bootstrapping code will be located at `$0000` in segment `$0`.  Since the `PC` and `PSEG` start at that address, at power-on/reset the CPU will begin executing code at that location.
 
 The data bus is pulled low by default on read; if no hardware responds to the address a zero word will be read.  With the `PC` starting at `$0000`, on a system devoid of any memory devices the CPU will read a `0x0000` instruction.  That decodes to `MOV R0, PC` — transfer the `PC` to register `R0` (discarding the value).  The `PC` will advance to `$0002` and fetch another `0x0000` instruction.  As this instruction stream executes, eventually the `PSEG` will increment to `$1` and the `PC` will wrap back around to `$0000` before continuing in like fashion through that segment of memory.  Given enough time, the `PSEG` will increment from `$F` back to `$0` and repeat the entire sequence again.  In this way, the CPU instruction fetch, decode, and execute can be tested and the march of the `PC` and `PSEG` registers can be observed.
