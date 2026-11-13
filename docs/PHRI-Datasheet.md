@@ -95,10 +95,10 @@ The defined/undefined counts above can be broken by category:
 
 | Instruction class | Defined[1] | Undefined | Total |
 | :---------------- | --------: | --------: | ----: |
-| ALU               |     30816 |      1952 | 32768 |
+| ALU               |     30848 |      1920 | 32768 |
 | Data movement     |     11560 |      4824 | 16384 |
 | Branching         |      9680 |      6704 | 16384 |
-| Total             |     52056 |     13480 | 65536 |
+| Total             |     52088 |     13448 | 65536 |
 
 **[1]** Includes both implemented and unimplemented instructions matching an encoding pattern.
 
