@@ -79,18 +79,25 @@ The values of the latter four codes negate the first four, and differ only in bi
 
 Instructions consist of a 16-bit word with no additional operand bytes.  Any operands are embedded in the instruction word.  Of the possible 65536 unique words:
 
-| Count | Disposition |
-| ----: | :---------- |
-| 51832 | match exactly one encoding pattern |
-|   256 | match two patterns (intentional aliases) |
-Match two patterns (intentional aliases)	256
-Match no documented pattern	13,448
+| Count | Disposition                        |
+| ----: | :--------------------------------- |
+| 52056 | match exactly one encoding pattern |
+| 13480 | match no encoding pattern          |
 
 Instructions are classifed into three categories:
 
 - Arithmetic and logic unit
 - Data movement
 - Branching
+
+The defined/undefined counts above can be broken by category:
+
+| Instruction class | Defined | Undefined | Total |
+| :---------------- | ------: | --------: | ----: |
+| ALU               |   30816 |      1952 | 32768 |
+| Data movement     |   11560 |      4824 | 16384 |
+| ALU               |    9680 |      6704 | 16384 |
+| ALU               |   52056 |     13480 | 65536 |
 
 All instructions are assigned a mnemonic for the sake of assembly programming.
 
