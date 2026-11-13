@@ -96,6 +96,7 @@ phri_cpu_execinstr(
         phri_word_t     is_rel = 1;
         unsigned int    Ry = 6;         // Implied link register is 6/L
         phri_word_t     offset = 0x0000;
+        phri_byte_t     pseg = cpu->registers.PSEG;
         
         if ( cpu->registers.INSTR & kphri_branch_op_cond ) {
             phri_word_t cond = (cpu->registers.INSTR & kphri_branch_op_cond_mask) >> kphri_branch_op_cond_shift;
@@ -119,6 +120,18 @@ phri_cpu_execinstr(
                 offset = (cpu->registers.INSTR & kphri_branch_op_const_mask) << 1;
                 // Sign-extend the now 12-bit constant to 16-bit (constants are always relative branching):
                 if ( offset & 0b100000000000 ) offset |= 0b1111000000000000;
+            } else if ( cpu->registers.INSTR & 0b0000000100000000 ) {
+                // Segmented branch (absolute jump) -- does it get the segment from
+                // the instruction or a register?
+                phri_byte_t arg = (cpu->registers.INSTR & kphri_branch_op_sgmntd_const_mask) >> kphri_branch_op_sgmntd_const_shift;
+                
+                if ( cpu->registers.INSTR & kphri_branch_op_sgmntd_const ) {
+                    pseg = arg;
+                } else {
+                    pseg = phri_cpu_rdr(cpu, arg & 0b111) & 0x000F;
+                }
+                // Offset (or absolute address) comes from the indicated register:
+                offset = phri_cpu_rdr(cpu, (cpu->registers.INSTR & kphri_branch_op_rx_mask));
             } else {
                 is_rel = (cpu->registers.INSTR & kphri_branch_op_rel) ? 1 : 0;
                 // Offset (or absolute address) comes from the indicated register:
@@ -133,6 +146,9 @@ phri_cpu_execinstr(
                 // For a relative branch, adjust the PC by offset:
                 phri_cpu_pc_adjust(cpu, offset);
             else
+                // Set PSEG:
+                cpu->registers.PSEG = pseg;
+                
                 // For a non-relative branch, set the PC to offset:
                 cpu->registers.PC = offset;
         }

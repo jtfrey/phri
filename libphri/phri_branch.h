@@ -30,6 +30,11 @@ enum __attribute__((packed)) {
     kphri_branch_op_ry_mask         = 0b0000000001110000,   /*!< bitmask for register index y */
     kphri_branch_op_ry_shift        = 4,                    /*!< Ry index must be shifted down
                                                                  4 indices */
+    kphri_branch_op_sgmntd             = 0b0000001000000000,/*!< segmented branch */
+    kphri_branch_op_sgmntd_const       = 0b0000000100000000,/*!< segmented branch uses const PSEG */ 
+    kphri_branch_op_sgmntd_const_mask  = 0b0000000011110000,/*!< segmented branch, const PSEG mask*/
+    kphri_branch_op_sgmntd_const_shift = 4,                 /*!< segmented branch, const PSEG shift */
+    
     kphri_branch_op_rx_mask         = 0b0000000000000111    /*!< bitmask for register index x */
 };
 
