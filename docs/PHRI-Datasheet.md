@@ -282,9 +282,9 @@ Many negative constants can be loaded in fewer instructions through creative app
 | Mnemonic                | Actual code                               | Description                              |
 | :---------------------- | :---------------------------------------- | :--------------------------------------- |
 | `MOVK.L    Rd, #<IMM8>` | `MOVK   Rd, #<IMM8> & 0xF, ROR#0`         | Move each nibble of the 8-bit byte into  |
-|                         | `MOVK   Rd, #(<IMM8> >> 4) & 0xF, ROR#12` | into the low-byte of Rd in sequence.     |
+|                         | `MOVK   Rd, #(<IMM8> >> 4) & 0xF, ROR#12` | the low-byte of Rd in sequence.          |
 | `MOVK.H    Rd, #<IMM8>` | `MOVK   Rd, #<IMM8> & 0xF, ROR#8`         | Move each nibble of the 8-bit byte into  |
-|                         | `MOVK   Rd, #(<IMM8> >> 4) & 0xF, ROR#4`  | into the high-byte of Rd in sequence.    |
+|                         | `MOVK   Rd, #(<IMM8> >> 4) & 0xF, ROR#4`  | the high-byte of Rd in sequence.         |
 
 It may be more natural for the programmer to think of the bit shifts in terms of an ROL; the assembler can accept `ROL#<shift>` syntax and reinterpret it as `ROR#(16 - <shift>)%16`.
 
