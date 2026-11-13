@@ -290,15 +290,15 @@ It may be more natural for the programmer to think of the bit shifts in terms of
 
 Loading addresses into a register, either from an immediate value or from a label, is given its own pseudo-instructions:
 
-| Mnemonic                 | Actual code                            | Description                       |
-| :----------------------- | :------------------------------------- | :-------------------------------- |
-| `ADR      Rd, <LABEL>`   | `MOVZ    Rd, LABEL & 0xFF`             | Rd <= \<LABEL>                    |
-|                          | `MOVK.H  Rd, (LABEL >> 8) & 0xFF`      |                                   |
-| `ADR      Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL & 0xFF`        | Rd <= $HHLL                       |
-|                          | `MOVK.H  Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                   |
-| `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, LABEL >> 16, ROR#0`       | Rd <= \<LABEL>.SEGMENT            |
-| `ADRS     Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL >> 16, ROR#0`  | Rd <= ${S}                        |
-| `ADRS     DSEG, <LABEL>` | `MOV     SSR, #LABEL >> 16`            | SSR <= SSR |  \<LABEL>.SEGMENT |
+| Mnemonic                 | Actual code                            | Description                         |
+| :----------------------- | :------------------------------------- | :---------------------------------- |
+| `ADR      Rd, <LABEL>`   | `MOVZ    Rd, LABEL & 0xFF`             | Rd <= LABEL & 0x0FFFF               |
+|                          | `MOVK.H  Rd, (LABEL >> 8) & 0xFF`      |                                     |
+| `ADR      Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL & 0xFF`        | Rd <= $HHLL                         |
+|                          | `MOVK.H  Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                     |
+| `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, LABEL >> 16, ROR#0`       | Rd <= (LABEL & 0xF0000) >> 16       |
+| `ADRS     Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL >> 16, ROR#0`  | Rd <= ${S}                          |
+| `ADRS     DSEG, <LABEL>` | `MOV     SSR, #LABEL >> 16`            | SSR.DSEG <= (LABEL & 0xF0000) >> 16 |
 
 
 #### Memory-based
@@ -422,7 +422,7 @@ To redirect execution to an explicit address in memory, a 16-bit value is requir
 
 The `ccc` bits represent the condition code which, if satisfied, will cause the instruction to be executed.  The `XXX` and `YYY` are register indices.
 
-A segmented branch redirects the `PC` **and** the `PSEG` to jump to code in a separate 64 KiB segment of memory.  This is the only method for direct modification of the `PSEG` by user code; all other cases involve 16-bit address overflow or underflow as the CPU is modifying the `PC`.
+A segmented branch atomically sets the `PC` **and** the `PSEG` to immediately jump to code in a specific 64 KiB segment of memory.  This is the only method for direct modification of the `PSEG` by user code (all other cases involve 16-bit address overflow or underflow as the CPU is modifying the `PC`).
 
 | Mnemonic               | Bit pattern        | Description                                     |
 | :--------------------- | :----------------- | :---------------------------------------------- |
@@ -434,17 +434,17 @@ There are no linking segmented branch instructions since a 16-bit register can o
 
 ##### Pseudo instructions
 
-Since the `PC` starts at `$0000` in segment `$0` at boot, basic bootstrapping code is expected to be present at that address.  For code resident in segment `$0`, the `R0`/`Z` register allows for a straightforward instruction that reenters that bootstrapping code:
+Since the `PC` starts at `$0000` in segment `$0` at boot, basic bootstrapping code is expected to be present at that address.  The `R0`/`Z` register allows for a straightforward instruction that reenters that bootstrapping code:
 
 ```
-B       R0
+BSEG    R0, #0
 ```
 
 The ISA includes a pseudo-instruction for this:
 
-| Mnemonic  | Actual code | Description     |
-| :-------- | :---------- | :-------------- |
-| `RSTRT`   | `B    R0`   | PC <= `$0000`   |
+| Mnemonic  | Actual code     | Description                   |
+| :-------- | :-------------- | :---------------------------- |
+| `RSTRT`   | `BSEG   R0, #0` | PSEG <= `$0`, PC <= `$0000`   |
 
 A conditional and unconditional `RET` instruction makes use of the absolute `B` instruction and the conventional linking register:
 
