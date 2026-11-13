@@ -5,7 +5,9 @@ The PHRI (PHRI is a Hypothetical RISC ISA) is an invented 16-bit ISA.  It featur
 
 ## Register set
 
-The PHRI possesses twelve 16-bit registers.  There are eight general-purpose registers labelled R0 through R7; R0 is a read-only register that always contains a value of zero.  The remaining registers are usable in any capacity across the instructions, but the assembly mnemonics include aliases for each that convey a possible purpose:
+The PHRI possesses twelve 16-bit registers.
+
+There are eight general-purpose registers labelled R0 through R7; R0 is a read-only register that always contains a value of zero.  The remaining registers are usable in any capacity across the instructions, but the assembly mnemonics include aliases for each that convey a possible purpose:
 
 | Index | Alias | Implied usage                                          |
 | :---- | :---- | :----------------------------------------------------- |
@@ -37,6 +39,23 @@ The `F` register is an 8-bit set of condition (status) flags.  Only five bits ar
 The `MSEG` and `F` registers collectively form the 16-bit Segment and Status Register, `SSR`.  The `MSEG` is its LSB and the `SSR` is its MSB.  Instructions are present that allow for transfer and manipulation of the `SSR` as a whole.
 
 The instruction register (`INSTR`) latches the instruction word when one is fetched.
+
+| 16-bit register | Additional info                   |
+| :-------------- | :-------------------------------- |
+| `R0` (`Z`)      |                                   |
+| `R1` (`K`)      |                                   |
+| `R2` (`J`)      |                                   |
+| `R3` (`A`)      |                                   |
+| `R4` (`B`)      |                                   |
+| `R5` (`M`)      |                                   |
+| `R6` (`L`)      |                                   |
+| `R7` (`SP`)     |                                   |
+| `PC`            | Program counter                   |
+| `INSTR`         | Last-fetched instruction          |
+| `MOFF`          | Low word of address on memory bus |
+| `SSR`           |    \|   F    :   MSEG  \|         |
+|                 | 15 \|        :PSEG:DSEG\| 0       |
+|                 |    \|▪︎▪︎▪︎▪︎▪︎▪︎▪︎▪︎:▪︎▪︎▪︎▪︎:▪︎▪︎▪︎▪︎\|         |
 
 ### Condition codes
 
@@ -156,11 +175,14 @@ Inverting the bits in a word is a bitwise NOT; this can be effected using an exc
 | `BITS Rx`            | `ANDS R0, Rx, R0`          | When Ry=R0, R0 is flipped to `0xFFFF` and status bits are set  |
 |                      |                            | from the discarded result (Rx & 0xFFFF)                        |
 |                      |                            | ([M]=bit 15, [V]=bit 14, [C]=bit 0)                            |
-| `BITC Rx, #1`        | `ROR R0, Rx, #1`           | [C]arry will be set to bit 1 of Rx.                            |
-| `BITC Rx, #(N=2i)`   | `ROR R0, Rx, #N`           | [C]arry will be set to the given even-index bit of Rx.         |
-| `BITM Rx, #(N=2i+3)` | `ROR Rx, #(N+1)`           | [M]inus will be set to the given odd-index bit of Rx.          |
-|                      | `ANDS R0, Rx, R0`          | There is no way to shift an odd number of indices (other than  |
-|                      | `ROR Rx, #(15-N)`          | 1) and `ROR` clobbers [C]arry, so this  |
+| `BITC Rx, #0`        | `LSR R0, Rx, #1`           | [C]arry will be set to bit 0 of Rx.                            |
+| `BITC Rx, #{1…13/2}` | `LSR R0, Rx, #(N+1)`       | [C]arry will be set to the given odd-index bit of Rx; e.g.     |
+|                      |                            | since `LSR` sets [C] to the bit last moved, bit 1 requires 2   |
+|                      |                            | shifts to move it into [C] while bit 13 needs 14 shifts        |
+| `BITC Rx, #{2…14/2}` | `LSL R0, Rx, #(16-N)`      | [C]arry will be set to the given even-index bit of Rx; e.g.    |
+|                      |                            | since `LSL` sets [C] to the bit last moved, bit 14 requires 2  |
+|                      |                            | shifts to move it into [C] while bit 2 needs 14 shifts         |
+| `BITC Rx, #15`       | `LSL R0, Rx, #1`           | [C]arry will be set to bit 15 of Rx                            |
 
 Shortcut mnemonics for alterations to the status register are also provided:
 
@@ -191,7 +213,7 @@ Introducing values into registers is a fundamental behavior of a processor.  The
 | `MOV          Rd, PC`                    | `0000000000000DDD` | Rd <= PC                               [1] |
 | `MOV          Rd, SSR`                   | `0000000000001DDD` | Rd <= SSR                              [2] |
 | `MOV          SSR, Rx`                   | `0000000000100XXX` | SSR <= Rx                              [3] |
-| `MOV          SSR, <#IMM4>`              | `000000000011CCCC` | SSR <= IMM4                            [4] |
+| `MOV          SSR, #<IMM4>`              | `000000000011CCCC` | SSR <= IMM4                            [4] |
 | `MOV{Z}       Rd, #<IMM8>`               | `00001CCCCCCCCDDD` | Rd <= IMM8                             [5] |
 | `MOV{K\|Z}{N}  Rd, #<IMM4>, ROR#(2*SSS)` | `0001NKSSSCCCCDDD` | Rd <= const                            [6] |
 | `  MOV{Z}     Rd, #<IMM4>, ROR#(2*SSS)`  | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
@@ -253,9 +275,9 @@ Moving a 16-bit word into a register can be accomplished using up to 3 instructi
 |                      |             OR                             |                                          |
 |                      |                                            |                                          |
 | `MOV   Rd, #0xFD93`  | `MOVZ   Rd, #0x6C`                         | The LSB of the NOT'ed value followed by  |
-|                      | `MOVKN  Rd, #1, ROR#13`                    | the single bit in the MSB and NOT.       |
+|                      | `MOVKN  Rd, #2, ROR#8`                     | the single bit in the MSB and NOT.       |
 
-Many negative constants can be loaded in fewer instructions through creative application of the bitwise-NOT and bit shift, e.g. `MOVZN  Rd, #0b0001, ROR#0` would load Rd with `0xFFFE` or `-2`.  Loading 12- or 8-bit constants behave in similar fashion, but the two special cases of replacing the high- or low-byte of a register are included:
+Many negative constants can be loaded in fewer instructions through creative application of the bitwise-NOT and bit shift, e.g. `MOVZN  Rd, #0b0001, ROR#0` would load Rd with `0xFFFE` or `-2`.  Loading 12- or 8-bit constants behaves in similar fashion, but the two special cases of replacing the high- or low-byte of a register are included:
 
 | Mnemonic                | Actual code                               | Description                              |
 | :---------------------- | :---------------------------------------- | :--------------------------------------- |
@@ -270,18 +292,18 @@ Loading addresses into a register, either from an immediate value or from a labe
 
 | Mnemonic                 | Actual code                            | Description                       |
 | :----------------------- | :------------------------------------- | :-------------------------------- |
-| `ADR      Rd, <LABEL>`   | `MOV.L   Rd, LABEL & 0xFF`             | Rd <= \<LABEL>                    |
-|                          | `MOV.H   Rd, (LABEL >> 8) & 0xFF`      |                                   |
-| `ADR      Rd, #${S}HHLL` | `MOV.L   Rd, #0x{S}HHLL & 0xFF`        | Rd <= $HHLL                       |
-|                          | `MOV.H   Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                   |
+| `ADR      Rd, <LABEL>`   | `MOVZ    Rd, LABEL & 0xFF`             | Rd <= \<LABEL>                    |
+|                          | `MOVK.H  Rd, (LABEL >> 8) & 0xFF`      |                                   |
+| `ADR      Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL & 0xFF`        | Rd <= $HHLL                       |
+|                          | `MOVK.H  Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                   |
 | `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, LABEL >> 16, ROR#0`       | Rd <= \<LABEL>.SEGMENT            |
 | `ADRS     Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL >> 16, ROR#0`  | Rd <= ${S}                        |
-| `ADRS     DSEG, <LABEL>` | `MOV     SSR, LABEL >> 16`             | SSR <= 0x0000 \| \<LABEL>.SEGMENT |
+| `ADRS     DSEG, <LABEL>` | `MOV     SSR, LABEL >> 16`             | SSR <= SSR |  \<LABEL>.SEGMENT |
 
 
 #### Memory-based
 
-The ISA includes a number of instructions which move data between system memory and the general-purpose registers.
+The ISA includes a number of instructions which move data between system memory and the general-purpose registers.  The first subset of modes use memory addresses taken directly from a register, optionally indexed by the value of a second register.  A conditional form is also present that only performs the memory operation if the indicated condition code (CC) is satisfied by the current state of the CPU.
 
 | Mnemonic                      | Bit pattern        | Description                           |
 | :---------------------------- | :----------------- | :------------------------------------ |
@@ -289,16 +311,23 @@ The ISA includes a number of instructions which move data between system memory 
 | `LDL       Rd, [Rx]`          | `0010000000XXXDDD` | Rd.LSB <= [Rx].LSB                    |
 | `LDH       Rd, [Rx]`          | `0010000001XXXDDD` | Rd.MSB <= [Rx].MSB                    |
 | `LDR.<CC>  Rd, [Rx]`          | `0010010cccXXXDDD` | If CC: Rd <= [Rx]                     |
-| `LDR       Rd, [Rx], #<IMM4>` | `001010CCCCXXXDDD` | Rd <= [Rx], Rx += IMM4                |
-| `LDR       Rd, [Rx], Ry`      | `0010110YYYXXXDDD` | Rd <= [Rx], Rx += Ry                  |
 | `STO       [Rx+Ry], Rd`       | `0011001YYYXXXDDD` | [Rx + Ry] <= Rd (no offset, Ry=Z)     |
 | `STL       [Rx], Rd`          | `0011000000XXXDDD` | [Rx].LSB <= Rd.LSB                    |
 | `STH       [Rx], Rd`          | `0011000001XXXDDD` | [Rx].MSB <= Rd.MSB                    |
 | `STO.<CC>  [Rx], Rd`          | `0011010cccXXXDDD` | If CC: [Rx] <= Rd                     |
-| `STO       #<IMM4>, [Rx], Rd` | `001110CCCCXXXDDD` | Rx += IMM4, [Rx] <= Rd                |
+
+The second subset are auto-modification modes.  For the load instructions, the value at the location in the address register is loaded into the destination register, and then the address register is incremented/decremented by a signed 4-bit constant or the value of a third register.  For the store instructions, the address register is first incremented/decremented then the source register's value is written to that location.
+
+| Mnemonic                      | Bit pattern        | Description                           |
+| :---------------------------- | :----------------- | :------------------------------------ |
+| `LDR       Rd, [Rx], #<IMM4>` | `001010CCCCXXXDDD` | Rd <= [Rx], Rx += IMM4            [1] |
+| `LDR       Rd, [Rx], Ry`      | `0010110YYYXXXDDD` | Rd <= [Rx], Rx += Ry                  |
+| `STO       #<IMM4>, [Rx], Rd` | `001110CCCCXXXDDD` | Rx += IMM4, [Rx] <= Rd            [1] |
 | `STO       Ry, [Rx], Rd`      | `0011110YYYXXXDDD` | Rx += Ry, [Rx] <= Rd                  |
 
-The ISA includes load and store instructions that automatically adjust the address register.  For `LDR` instructions the adjustment is made after the data has been loaded; for `STO` the adjustment is made before the data is loaded.  Load instructions are thus post-increment or post-decrement, while store instructions are pre-increment or pre-decrement.  The most common use pattern is pre-decrement `STO` with post-increment `LDR`:  a stack.
+**[1]** The signed 4-bit immediate has the range [-8,+7].
+
+The most common use pattern for the auto-modification modes is pre-decrement `STO` with post-increment `LDR`:  a stack.
 
 ##### Stacks
 
@@ -360,7 +389,7 @@ if ( x % 2 ) {
 Since `x` is even, the conditional fails and the increment must be skipped by branching past it.  Calling a subroutine is slightly more complicated:  the `PC` must be saved before it is modified, so that the subroutine can restore that saved value to continue program execution in the calling context.  In the PHRI ISA, saving the `PC` before altering it is known as *linking*, and can be enabled on any of the branch instructions.  The value of the `PC` is transferred to one of the general purpose registers.  For the 12-bit constant offset modes, the `R6`/`L` is implied, while the other modes allow an arbitrary general purpose register to be chosen:
 
 ```
-            MOV.L       A, #18          ; Set A to 0x0012
+            MOVZ        A, #18          ; Set A to 0x0012
             BRL         two_a_plus_one  ; copy the PC to R6/L, then offset the PC to reach subroutine two_a_plus_one
               :
             
@@ -417,9 +446,10 @@ A conditional and unconditional `RET` instruction makes use of the absolute `B` 
 
 #### Relative mode
 
-In relative addressing mode, a two's complement value is added to the `PC` register.  The value can be sourced from a general-purpose register or using constants embedded in the instruction.
+In relative addressing mode, a signed two's complement value is added to the `PC` register.  The `PC` is adjusted after an instruction is fetched, so an offset of zero (0) refers to the location of the instruction immediately following the branch being evaluated.
 
-Since instructions are 16-bit and the ISA demands 16-bit alignment for code, the embedded constant is multiplied by two before being added to the `PC`.  Thus, an 11-bit constant is actually a 12-bit offset, and an 8-bit constant is a 9-bit offset.
+The *register offset relative* mode sources the offset from a general-purpose register.  In this mode, the value of the register is added to the `PC` to produce the target address; the offset is in units of *bytes*.
+
 
 | Mnemonic            | Bit pattern        | Description                                        |
 | :------------------ | :----------------- | :------------------------------------------------- |
@@ -427,11 +457,16 @@ Since instructions are 16-bit and the ISA demands 16-bit alignment for code, the
 | `BRL      Rx, Ry`   | `011000000YYY1XXX` | Ry <= PC, PC <= PC + Rx         (Rx = Ry is valid) |
 | `BR.<CC>  Rx`       | `0101ccc000001XXX` | If CC: PC <= PC + Rx                               |
 | `BRL.<CC> Rx, Ry`   | `0111ccc00YYY1XXX` | If CC: Ry <= PC, PC <= PC + Rx  (Rx = Ry is valid) |
-| `BR       <OFFSET>` | `01001CCCCCCCCCCC` | PC <= PC + (OFFSET << 1)               (11b const) |
-| `BRL      <OFFSET>` | `01101CCCCCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)     (11b const) |
-| `BR.<CC>  <OFFSET>` | `0101ccc1CCCCCCCC` | PC <= PC + (OFFSET << 1)                (8b const) |
-| `BRL.<CC> <OFFSET>` | `0111ccc1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET << 1)      (8b const) |
 
+
+The *immediate offset relative* mode sources the offset from a constant embedded in the instruction.  Since instructions are 16-bit the embedded constant is multiplied by two before being added to the `PC`; the offset is in units of *words*.  Thus, an 11-bit constant is actually a 12-bit signed offset, and an 8-bit constant is a 9-bit signed offset.  
+
+| Mnemonic            | Bit pattern        | Description                                        |
+| :------------------ | :----------------- | :------------------------------------------------- |
+| `BR       <OFFSET>` | `01001CCCCCCCCCCC` | PC <= PC + (OFFSET * 2)                (11b const) |
+| `BRL      <OFFSET>` | `01101CCCCCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET * 2)      (11b const) |
+| `BR.<CC>  <OFFSET>` | `0101ccc1CCCCCCCC` | PC <= PC + (OFFSET * 2)                 (8b const) |
+| `BRL.<CC> <OFFSET>` | `0111ccc1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET * 2)       (8b const) |
 
 ## System startup/reset
 
