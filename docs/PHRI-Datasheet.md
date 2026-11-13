@@ -43,7 +43,7 @@ The instruction register (`INSTR`) latches the instruction word when one is fetc
 | 16-bit register | Additional info                   |
 | :-------------- | :-------------------------------- |
 | `R0` (`Z`)      |                                   |
-| `R1` (`K`)      |                                   |
+| `R1` (`I`)      |                                   |
 | `R2` (`J`)      |                                   |
 | `R3` (`A`)      |                                   |
 | `R4` (`B`)      |                                   |
@@ -166,7 +166,7 @@ While there are no explicit `CMP` or `CMN` modes for multiple registers or short
 | `CMN.R Rx, Ry`       | `ADD R0, Rx, Ry`             |                                                                |
 | `CMN.I Rx, #<IMM3>`  | `ADD R0, Rx, #<IMM3>`        |                                                                |
 
-Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an `ANDS` that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by `ANDS`, `ROR` instructions can be used to test bit 1 and all even-indexed bits.
+Inverting the bits in a word is a bitwise NOT; this can be effected using an exclusive or with `0xFFFF`.  In other assembly languages a bit-test instruction sets status flags to the values at specific bit indices, which in this ISA can be accompished with an `ANDS` that discards its result and has `R0`/`Z` as it's `Ry` operand.  For bit indices not captured by `ANDS`, bit shift instructions with `R0` as the destination register can be used to non-destructively test an arbitrary bit index.
 
 | Mnemonic             | Actual code                | Description                                                    |
 | :------------------- | :------------------------- | :------------------------------------------------------------- |
@@ -212,10 +212,10 @@ Introducing values into registers is a fundamental behavior of a processor.  The
 | :--------------------------------------- | :----------------- | :----------------------------------------- |
 | `MOV          Rd, PC`                    | `0000000000000DDD` | Rd <= PC                               [1] |
 | `MOV          Rd, SSR`                   | `0000000000001DDD` | Rd <= SSR                              [2] |
-| `MOV          SSR, Rx`                   | `0000000000100XXX` | SSR <= Rx                              [3] |
-| `MOV          SSR, #<IMM4>`              | `000000000011CCCC` | SSR <= IMM4                            [4] |
+| `MOV          SSR, Rx`                   | `0000000000100XXX` | SSR <= (Rx & ~0x00F0) | (SSR & 0x00F0) [3] |
+| `MOV          SSR, #<IMM4>`              | `000000000011CCCC` | SSR <= (SSR & ~0x000F) | IMM4          [4] |
 | `MOV{Z}       Rd, #<IMM8>`               | `00001CCCCCCCCDDD` | Rd <= IMM8                             [5] |
-| `MOV{K\|Z}{N}  Rd, #<IMM4>, ROR#(2*SSS)` | `0001NKSSSCCCCDDD` | Rd <= const                            [6] |
+| `MOV{K\|Z}{N} Rd, #<IMM4>, ROR#(2*SSS)`  | `0001NKSSSCCCCDDD` | Rd <= const                            [6] |
 | `  MOV{Z}     Rd, #<IMM4>, ROR#(2*SSS)`  | `000100SSSCCCCDDD` | Rd <= IMM4 ROR {0,2,4,6,8,10,12,14}        |
 | `  MOVZN      Rd, #<IMM4>, ROR#(2*SSS)`  | `000110SSSCCCCDDD` | Rd <= ~(IMM4 ROR {0,2,4,6,8,10,12,14})     |
 | `  MOVK       Rd, #<IMM4>, ROR#(2*SSS)`  | `000101SSSCCCCDDD` | `MOVZ` but with untouched Rd bits retained |
@@ -298,7 +298,7 @@ Loading addresses into a register, either from an immediate value or from a labe
 |                          | `MOVK.H  Rd, #(0x{S}HHLL >> 8) & 0xFF` |                                   |
 | `ADRS     Rd, <LABEL>`   | `MOVZ    Rd, LABEL >> 16, ROR#0`       | Rd <= \<LABEL>.SEGMENT            |
 | `ADRS     Rd, #${S}HHLL` | `MOVZ    Rd, #0x{S}HHLL >> 16, ROR#0`  | Rd <= ${S}                        |
-| `ADRS     DSEG, <LABEL>` | `MOV     SSR, LABEL >> 16`             | SSR <= SSR |  \<LABEL>.SEGMENT |
+| `ADRS     DSEG, <LABEL>` | `MOV     SSR, #LABEL >> 16`            | SSR <= SSR |  \<LABEL>.SEGMENT |
 
 
 #### Memory-based
@@ -413,24 +413,34 @@ three_a:    PUSH        R1              ; Save the return address on the stack
 
 To redirect execution to an explicit address in memory, a 16-bit value is required.  Since instructions are 16-bit themselves, there is no way to embed an address in them.  Absolute branching is only possible using addresses present in general-purpose registers.
 
-| Mnemonic          | Bit pattern        | Description                                     |
-| :---------------- | :----------------- | :---------------------------------------------- |
-| `B        Rx`     | `0100000000000XXX` | PC <= Rx                                        |
-| `BL       Rx, Ry` | `011000000YYY0XXX` | Ry <= PC, PC <= Rx           (Rx = Ry is valid) |
-| `B.<CC>   Rx`     | `0101ccc000000XXX` | If CC: PC <= Rx                                 |
-| `BL.<CC>  Rx, Ry` | `0111ccc00YYY0XXX` | If CC: Ry <= PC, PC <= Rx    (Rx = Ry is valid) |
+| Mnemonic               | Bit pattern        | Description                                     |
+| :--------------------- | :----------------- | :---------------------------------------------- |
+| `B        Rx`          | `0100000000000XXX` | PC <= Rx                                        |
+| `BL       Rx, Ry`      | `011000000YYY0XXX` | Ry <= PC, PC <= Rx           (Rx = Ry is valid) |
+| `B.<CC>   Rx`          | `0101ccc000000XXX` | If CC: PC <= Rx                                 |
+| `BL.<CC>  Rx, Ry`      | `0111ccc00YYY0XXX` | If CC: Ry <= PC, PC <= Rx    (Rx = Ry is valid) |
 
 The `ccc` bits represent the condition code which, if satisfied, will cause the instruction to be executed.  The `XXX` and `YYY` are register indices.
 
+A segmented branch redirects the `PC` **and** the `PSEG` to jump to code in a separate 64 KiB segment of memory.  This is the only method for direct modification of the `PSEG` by user code; all other cases involve 16-bit address overflow or underflow as the CPU is modifying the `PC`.
+
+| Mnemonic               | Bit pattern        | Description                                     |
+| :--------------------- | :----------------- | :---------------------------------------------- |
+| `BSEG     Rx, #<IMM4>` | `01000011CCCC0XXX` | PSEG <= IMM4, PC <= Rx                          |
+| `BSEG     Rx, Ry`      | `010000100YYY0XXX` | PSEG <= Ry & 0x000F, PC <= Rx                   |
+
+There are no linking segmented branch instructions since a 16-bit register can only hold the value of the `PC`.
+
+
 ##### Pseudo instructions
 
-Since the `PC` starts at `$0000` at boot, basic bootstrapping code is expected to be present at that address.  The `R0`/`Z` register allows for a straightforward instruction that reenters that bootstrapping code:
+Since the `PC` starts at `$0000` in segment `$0` at boot, basic bootstrapping code is expected to be present at that address.  For code resident in segment `$0`, the `R0`/`Z` register allows for a straightforward instruction that reenters that bootstrapping code:
 
 ```
 B       R0
 ```
 
-Since `R0`/`Z` is always zero, the `PC` is set to `$0000` by this instruction.  The ISA includes a pseudo-instruction for this:
+The ISA includes a pseudo-instruction for this:
 
 | Mnemonic  | Actual code | Description     |
 | :-------- | :---------- | :-------------- |
