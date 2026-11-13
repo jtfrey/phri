@@ -77,7 +77,14 @@ The values of the latter four codes negate the first four, and differ only in bi
 
 ## Instruction set
 
-Instructions consist of a 16-bit word with no additional operand bytes.  Any operands are embedded in the instruction word.
+Instructions consist of a 16-bit word with no additional operand bytes.  Any operands are embedded in the instruction word.  Of the possible 65536 unique words:
+
+| Count | Disposition |
+| ----: | :---------- |
+| 51832 | match exactly one encoding pattern |
+|   256 | match two patterns (intentional aliases) |
+Match two patterns (intentional aliases)	256
+Match no documented pattern	13,448
 
 Instructions are classifed into three categories:
 
@@ -89,10 +96,11 @@ All instructions are assigned a mnemonic for the sake of assembly programming.
 
 It should be noted that there are no explicit no-operation (NOP) instructions present; there are a number of instructions that effectively function as such, though:
 
-| Mnemonic                | Notes
-| :---------------------- | :--------------------------------- |
-| `<OPCODE> R0, R0, R0`   | OPCODE = ADD, SUB, AND, OR, XOR    |
-| `SR       AND, #0b1111` | Status bits retain existing values |
+| Mnemonic                | Notes                                       |
+| :---------------------- | :------------------------------------------ |
+| `<OPCODE> R0, R0, R0`   | OPCODE = AND, OR, XOR                       |
+| `SR       AND, #0b1111` | Status bits retain existing values          |
+| `BR       #0`           | Continues execution at the next instruction |
 
 
 ### Arithmetic and logic
@@ -393,7 +401,7 @@ Since `x` is even, the conditional fails and the increment must be skipped by br
             BRL         two_a_plus_one  ; copy the PC to R6/L, then offset the PC to reach subroutine two_a_plus_one
               :
             
-            ADR         R1, three_a     ; M <= address of subroutine three_a
+            ADR         R1, three_a     ; I <= address of subroutine three_a
             BRL         R1, R1          ; set the PC to the address in R1, overwriting with the PC for return
             
 two_a_plus_one:
@@ -478,7 +486,7 @@ The *immediate offset relative* mode sources the offset from a constant embedded
 | `BR.<CC>  <OFFSET>` | `0101ccc1CCCCCCCC` | PC <= PC + (OFFSET * 2)                 (8b const) |
 | `BRL.<CC> <OFFSET>` | `0111ccc1CCCCCCCC` | R6 <= PC, PC <= PC + (OFFSET * 2)       (8b const) |
 
-
+A signed 11-bit constant provides a range of [-1024,+1023] words (or [-2048,+2046] bytes); an 8-bit constant a range of [-128,+127] words (or [-256,+254] bytes).
 
 ## System startup/reset
 
