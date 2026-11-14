@@ -499,9 +499,9 @@ The *immediate offset relative* mode sources the offset from a constant embedded
 A signed 11-bit constant provides a range of [-1024,+1023] words (or [-2048,+2046] bytes); an 8-bit constant a range of [-128,+127] words (or [-256,+254] bytes).
 
 
-### Valid instruction summary
+### Implemented instruction summary
 
-The following table contains all valid instructions and the 16-bit mask and value that identify that instruction.
+The following table contains all implemented instructions and the 16-bit mask and value that identify each.
 
 | Mnemonic   | Operand 1   | Operand 2     | Operand 3   | Base opcode          | Base mask            |
 | :--------- | :---------- | :------------ | :---------- | :------------------- | :------------------- |
